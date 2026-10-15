@@ -161,6 +161,12 @@ test('코드에 innerHTML, console, 저장소 접근, history 조작이 없다 (
   }
 });
 
+test('루트에 옛 데모 index.html과 원본 로고가 없다 (ADR-023, ADR-048)', async () => {
+  const rootFiles = await readdir(ROOT);
+  assert.ok(!rootFiles.includes('index.html'), '루트 index.html은 제거 대상입니다.');
+  assert.ok(!rootFiles.includes('리스파이어랩.png'), '루트의 원본 로고는 제거 대상입니다.');
+});
+
 test('src/ 전체 크기가 200KB 이하이고 로고는 40KB 이하이다 (ADR-045, ADR-056)', async () => {
   async function total(dir) {
     let sum = 0;

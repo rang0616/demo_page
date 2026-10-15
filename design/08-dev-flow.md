@@ -82,7 +82,7 @@
 - 배포는 `.github/workflows/pages.yml`이 합니다. `main`에 push되면 단위 테스트(`node --test tests/*.test.mjs`)를 돌리고, 통과하면 `src/`를 그대로 배포합니다. 테스트가 실패하면 배포되지 않습니다. (ADR-050)
 - `main`에 머지되는 것은 최종본뿐입니다. 배포 후 실제 주소에서 잠금 해제를 한 번 확인합니다. 반영에는 몇 분 걸릴 수 있습니다.
 - 배포 전 점검 순서:
-  1. 루트 데모 `index.html` 제거 여부 확인 (ADR-023)
+  1. 루트 데모 `index.html`과 원본 로고가 없는지 확인 (ADR-023, v0.5에서 제거함. `tests/page.test.mjs`가 지킴)
   2. 저장소 Settings → Pages → Source가 "GitHub Actions"인지 확인
   3. 소스 보기에서 정답이 없는지 확인. 편지는 ADR-023에 따라 공개를 허용합니다.
 

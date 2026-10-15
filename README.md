@@ -46,8 +46,6 @@ demo_page/
 ├── .claude/               # Claude Code 설정과 커맨드
 │   ├── settings.json      # 공유 권한 설정
 │   └── commands/          # 슬래시 커맨드 (/preview-check, /check-links)
-├── index.html             # 초기 데모 페이지 (구현 기준 아님, 정식 배포 전 제거 예정)
-├── 리스파이어랩.png        # 데모에서 쓰던 로고
 ├── .gitignore             # 커밋에서 제외할 파일
 └── .DS_Store              # macOS 파일 (추적하지 않음)
 ```
