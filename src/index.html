@@ -27,11 +27,25 @@
   </noscript>
 
   <main id="app">
-    <!-- 잠금 화면 -->
-    <section id="screen-lock" class="screen" aria-labelledby="lock-question">
+    <!-- 안내 화면 (첫 화면, ADR-057). 제목과 버튼만 두고, 장식은 제목의 이모지 둘(❤️, 🎁)뿐입니다. (ADR-058)
+         시작 버튼은 JS가 연결되기 전에는 비활성입니다. 연결되면 app.js가 활성화합니다. -->
+    <section id="screen-intro" class="screen" aria-labelledby="intro-title">
+      <div class="card intro-card">
+        <!-- 이모지는 장식이므로 스크린리더가 읽지 않게 합니다. 읽는 문장: "윰댕님! 선물이 도착했습니다." (ADR-058) -->
+        <h1 id="intro-title" class="question" tabindex="-1">윰댕님<span aria-hidden="true">❤️</span>!<br>선물<span aria-hidden="true">🎁</span>이 도착했습니다.</h1>
+        <button id="start-button" type="button" class="button" disabled>지금 바로 확인하기</button>
+      </div>
+    </section>
+
+    <!-- 잠금 화면 (안내 화면의 버튼을 누르면 나타납니다) -->
+    <section id="screen-lock" class="screen" aria-labelledby="lock-heading" hidden>
       <!-- 입력창에 name 속성을 두지 않습니다. 기본 제출이 일어나도 값이 전송되지 않습니다. (ADR-051) -->
       <form id="lock-form" class="card" autocomplete="off" novalidate>
-        <h1 id="lock-question" class="question" tabindex="-1">우리가 사귀기 시작한 날짜는?</h1>
+        <!-- 제목은 안내 두 줄과 질문을 함께 담습니다. 입력창의 이름은 질문만 씁니다. (ADR-059) -->
+        <h1 id="lock-heading" class="lock-heading" tabindex="-1">
+          <span class="lock-guide">신원을 확인하겠습니다.<br>아래 질문에 답을 해주세요.</span>
+          <span id="lock-question" class="question">휘와 윰댕이 사귄 날은?</span>
+        </h1>
         <input id="answer" type="text" class="field"
                aria-labelledby="lock-question" aria-describedby="status"
                autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
@@ -52,7 +66,8 @@
     <section id="screen-gift" class="screen" aria-labelledby="gift-hint" hidden>
       <div class="card gift-card">
         <h1 id="gift-hint" class="question" tabindex="-1">상자를 눌러서 열어 봐</h1>
-        <button id="gift-button" type="button" class="gift" aria-label="선물 상자 열기">
+        <!-- data-own-sound: 상자는 "뿅" 소리와 폭죽이 따로 있으므로 버튼 공통 "뾱"을 내지 않습니다. (ADR-058) -->
+        <button id="gift-button" type="button" class="gift" data-own-sound aria-label="선물 상자 열기">
           <span class="gift-box" aria-hidden="true">
             <span class="gift-lid"><span class="gift-bow"></span></span>
             <span class="gift-body"></span>

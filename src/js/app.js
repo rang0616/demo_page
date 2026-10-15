@@ -1,11 +1,11 @@
-// 시작점: 잠금 해제 흐름을 연결합니다. (ADR-040, ADR-042, ADR-043, ADR-051)
-// 상태는 단일 변수 state에 둡니다: 'locked' | 'decrypting' | 'error' | 'gift' | 'opening' | 'cards'
+// 시작점: 안내 화면부터 잠금 해제, 선물 상자, 카드까지의 흐름을 연결합니다. (ADR-040, ADR-042, ADR-043, ADR-051, ADR-057)
+// 상태는 단일 변수 state에 둡니다: 'intro' | 'locked' | 'decrypting' | 'error' | 'gift' | 'opening' | 'cards'
 
 import { normalizeAnswer } from './normalize.js';
 import { UnlockError, decryptEnvelope } from './crypto.js';
-import { playFanfare, playPop } from './sound.js';
+import { enableTapSound, playFanfare, playPop } from './sound.js';
 import {
-  clearAnswer, focusInput, getAnswer, onGiftOpen, onSubmit, playOpening, renderVoucher, setBusy,
+  clearAnswer, focusInput, getAnswer, onGiftOpen, onStart, onSubmit, playOpening, renderVoucher, setBusy,
   setStatus, showError, showScreen, startCards,
 } from './screens.js';
 
@@ -23,7 +23,7 @@ const MESSAGE = {
 const ENVELOPE_URL = 'data/letter.enc.json';
 const FETCH_TIMEOUT_MS = 12000; // 응답이 없으면 네트워크 오류로 봅니다. (ADR-051)
 
-let state = 'locked';
+let state = 'intro'; // 안내 화면에서 시작합니다. 새로고침하면 항상 여기서부터입니다. (ADR-057)
 let envelope = null; // 성공한 봉투는 메모리에 보관합니다.
 let unlockedPayload = null; // 복호화한 본문은 JS 변수에만 둡니다. 화면에는 필요한 부분만 textContent로 넣습니다.
 
@@ -127,6 +127,15 @@ async function handleGiftOpen() {
   playFanfare({ delay: reducedMotion ? 0.35 : 0 });
 }
 
+// 안내 화면의 버튼을 누르면 잠금 화면으로 넘어갑니다. 안내 화면으로 돌아오지 않습니다. (ADR-057)
+function handleStart() {
+  if (state !== 'intro') return;
+  state = 'locked';
+  showScreen('lock'); // 잠금 화면 제목(#lock-heading, 안내와 질문 전체)으로 포커스가 옮겨집니다.
+}
+
+enableTapSound(); // 모든 버튼에 "뾱" 소리. 첫 버튼 탭에서 AudioContext가 만들어집니다. (ADR-058)
+onStart(handleStart);
 onSubmit(handleSubmit);
 onGiftOpen(handleGiftOpen);
 setBusy(false); // 제출 버튼은 HTML에서 비활성으로 시작합니다. 연결이 끝났으니 활성화합니다.

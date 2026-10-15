@@ -141,6 +141,26 @@ body {
   color: var(--text);
 }
 
+/* 잠금 화면 제목 (ADR-059): 안내 두 줄은 작게, 질문은 크고 굵게. */
+.lock-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  outline: none;
+}
+
+.lock-guide {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+/* 안내 화면 (ADR-057). 잠금 화면과 같은 카드, 제목, 버튼을 씁니다. */
+.intro-card {
+  padding: 40px 24px;
+  gap: 24px;
+}
+
 /* 선물 상자 (ADR-053). 모두 CSS로 그립니다. */
 .gift-card {
   padding: 40px 24px;

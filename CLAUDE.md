@@ -49,7 +49,7 @@ Claude Code가 이 저장소에서 작업할 때 따를 기준입니다. 세부 
 - 자동 검사: `node --test tests/*.test.mjs`(정규화, 암호 왕복). 실제 암호문은 `node tools/encrypt.mjs --self-test`로 확인합니다.
 - 확인 항목은 `design/08-dev-flow.md`의 전 버전 공통 조건과 각 버전 완료 조건입니다.
 - 확인하지 못한 항목은 PR이나 보고에 명시합니다.
-- 커맨드 `/preview-check`, `/check-links`는 아직 데모 기준입니다. v0.1 안에 `src/` 기준으로 고칩니다.
+- 커맨드 `/preview-check`, `/check-links`는 `src/` 기준입니다.
 
 ## 하지 말아야 할 것
 

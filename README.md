@@ -29,7 +29,7 @@ demo_page/
 │   │   ├── normalize.js   #   정답 정규화 (도구와 공유)
 │   │   ├── crypto.js      #   키 파생, 복호화, 오류 구분
 │   │   ├── screens.js     #   화면과 카드 전환, 상태 문구, 포커스, 바우처 표시
-│   │   ├── sound.js       #   효과음 합성: 뿅, 짜잔 (WebAudio)
+│   │   ├── sound.js       #   효과음 합성: 뾱, 뿅, 짜잔 (WebAudio)
 │   │   └── confetti.js    #   폭죽 (캔버스)
 │   ├── data/              # 암호화된 본문 (letter.enc.json, 도구가 생성)
 │   └── img/logo.jpg       # 센터 로고 (720×207)

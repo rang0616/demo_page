@@ -1,4 +1,5 @@
-// 효과음 합성 (ADR-027, ADR-055). 음원 파일 없이 WebAudio로 만듭니다.
+// 효과음 합성 (ADR-027, ADR-055, ADR-058). 음원 파일 없이 WebAudio로 만듭니다.
+//   playTap     모든 버튼을 누를 때: 짧은 "뾱" (enableTapSound가 문서 전체의 클릭을 받아 처리)
 //   playPop     상자를 누르는 순간: "뿅" 하고 터지는 소리와 짧은 반짝임
 //   playFanfare 바우처로 넘어갈 때: "짜잔" 팡파레
 // 상자를 누르는 이벤트 안에서 playPop을 호출해야 모바일에서 소리가 납니다.
@@ -10,7 +11,7 @@ function getContext() {
   const AudioContextClass = globalThis.AudioContext || globalThis.webkitAudioContext;
   if (!AudioContextClass) return null;
   if (!context) context = new AudioContextClass();
-  if (context.state === 'suspended') context.resume().catch(() => {});
+  if (context.state !== 'running') context.resume().catch(() => {}); // suspended, 그리고 일부 브라우저의 interrupted
   return context;
 }
 
@@ -30,6 +31,27 @@ function voice(ctx, { type = 'sine', from, to = from, start, length, peak, hold 
   gain.connect(ctx.destination);
   oscillator.start(start);
   oscillator.stop(start + length + 0.05);
+}
+
+// 버튼 소리 "뾱": 음높이가 빠르게 올라가는 짧은 소리 하나. (ADR-058)
+export function playTap() {
+  try {
+    const ctx = getContext();
+    if (!ctx) return;
+    voice(ctx, { from: 380, to: 980, start: ctx.currentTime + 0.005, length: 0.1, peak: 0.14 });
+  } catch {
+    // 효과음이 실패해도 페이지는 그대로 동작합니다.
+  }
+}
+
+// 문서 전체의 클릭을 한 곳에서 받아, 모든 버튼에 "뾱" 소리를 냅니다. (이벤트 위임, ADR-058)
+// 비활성 버튼과 자기 소리가 있는 버튼(data-own-sound, 상자)은 제외합니다.
+export function enableTapSound() {
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest && event.target.closest('button');
+    if (!button || button.disabled || button.hasAttribute('data-own-sound')) return;
+    playTap();
+  });
 }
 
 export function playPop() {

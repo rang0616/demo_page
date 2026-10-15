@@ -1,10 +1,11 @@
-// 화면과 카드 전환, 상태 문구, 포커스 이동, 바우처 표시 (ADR-047, ADR-053, ADR-054, ADR-055).
-// 잠금, 오류, 선물 상자, 카드를 한 화면 단위로 바꿉니다. 뒤로 가기는 없습니다.
+// 화면과 카드 전환, 상태 문구, 포커스 이동, 바우처 표시 (ADR-047, ADR-053, ADR-054, ADR-055, ADR-057).
+// 안내, 잠금, 오류, 선물 상자, 카드를 한 화면 단위로 바꿉니다. 뒤로 가기는 없습니다.
 
 import { burstConfetti } from './confetti.js';
 import { VOUCHER_KEYS } from './crypto.js';
 
 const SCREEN_IDS = {
+  intro: 'screen-intro',
   lock: 'screen-lock',
   error: 'screen-error',
   gift: 'screen-gift',
@@ -15,6 +16,7 @@ const OPEN_ANIMATION_MS = 900; // 상자 뚜껑 연출(CSS 0.8초) 뒤 약간의
 const CARD_IDS = ['card-voucher', 'card-temp']; // 카드 순서는 이 배열 하나로 정합니다. (ADR-054)
 const CARD_GUARD_MS = 400; // 카드가 나타난 직후의 "다음" 탭은 무시합니다. (ADR-054) 등장 연출(0.7초)의 "밤!" 지점 뒤까지 막습니다.
 
+const startButton = document.getElementById('start-button');
 const form = document.getElementById('lock-form');
 const input = document.getElementById('answer');
 const submit = document.getElementById('submit');
@@ -70,6 +72,12 @@ export function getAnswer() {
 
 export function clearAnswer() {
   input.value = '';
+}
+
+// 안내 화면의 시작 버튼. HTML에서는 비활성으로 시작하고, 연결이 끝나면 활성화합니다. (ADR-057)
+export function onStart(handler) {
+  startButton.addEventListener('click', handler);
+  startButton.disabled = false;
 }
 
 export function onSubmit(handler) {
