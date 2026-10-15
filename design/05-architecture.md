@@ -53,14 +53,14 @@ src/                    # 배포 폴더 (GitHub Actions로 배포, ADR-050)
   css/style.css          # 스타일
   js/normalize.js        # 정답 정규화 (순수 함수, 도구와 공유, ADR-039)
   js/crypto.js           # 키 파생과 복호화 (ADR-040)
-  js/screens.js          # 화면과 카드 전환, 바우처·편지 표시, 편지 접기, 센터 주소 복사 (ADR-041, ADR-047, ADR-060)
+  js/screens.js          # 화면과 카드 전환, 바우처·편지 표시, 편지 접기, 센터 주소 복사 (ADR-041, ADR-047, ADR-060, ADR-061, ADR-063)
   js/sound.js            # 효과음 합성: 뾱(버튼), 뿅(상자), 짜잔 (ADR-027, ADR-055, ADR-058)
   js/confetti.js         # 폭죽 (캔버스, ADR-055)
   js/app.js              # 시작점: 잠금 해제 흐름과 연결 (ADR-041)
   data/letter.enc.json   # 암호화된 본문 (생성 결과물)
   img/logo.jpg           # 센터 로고 (720×207 JPEG, 40KB 이하, ADR-048, ADR-056)
 tools/encrypt.mjs        # 암호문 생성 (일회성, 배포 파일 아님, ADR-038)
-tests/                   # 정규화·암호 왕복 테스트 (배포 안 함, ADR-039, ADR-049)
+tests/                   # 정규화·암호 왕복·페이지 구조 테스트 (배포 안 함, ADR-039, ADR-049, ADR-062)
 tools/voucher.json       # 바우처 8개 값 (02 표와 같아야 함, ADR-042)
 package.json             # {"type":"module"}, 의존성 없음 (ADR-043)
 design/                  # 설계 문서 (SoT, 배포하지 않음)
@@ -171,7 +171,7 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 - 버튼 소리는 문서 전체의 클릭을 한 곳에서 받아 처리합니다(이벤트 위임). 비활성 버튼과 `data-own-sound`가 붙은 버튼(상자)은 제외합니다. 폼에서 Enter로 제출해도 브라우저가 제출 버튼의 클릭을 일으키므로 소리가 납니다.
 - 폭죽은 `confetti.js`가 전체 화면 캔버스(`aria-hidden`, 클릭 통과)에 그립니다. 상자 위치에서 위쪽으로 터지고, 약 1.8초 뒤 캔버스를 비우고 숨깁니다. 모션 감소 설정이면 그리지 않습니다.
 - 바우처와 편지는 복호화한 값을 `textContent`로 채웁니다. `innerHTML`은 쓰지 않습니다. 편지는 첫 항목을 호칭, 마지막 항목을 맺음말, 그 사이를 문단으로 나눠 넣고, 문단 안의 줄바꿈은 CSS로 보존합니다. (ADR-060)
-- 카드는 `screens.js`가 관리합니다. 카드 목록의 순서는 코드의 배열 `CARD_IDS` 하나로 정합니다. 현재 순서는 바우처 → 편지 → 센터 안내입니다. (ADR-054, ADR-060)
+- 카드는 `screens.js`가 관리합니다. 카드 목록의 순서는 코드의 배열 `CARD_IDS` 하나로 정합니다. 현재 순서는 바우처 → 편지 → 센터 안내 → 예약 안내입니다. (ADR-054, ADR-060, ADR-061)
 - 모션 감소: `prefers-reduced-motion: reduce`이면 연출 대기 시간 없이 바로 `cards`로 갑니다.
 
 ## 카드 등장 연출과 로고 (ADR-056)
@@ -199,7 +199,16 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 
 ## 편지와 센터 안내 구현 (ADR-060)
 
-- 편지 접기 버튼은 `aria-expanded`와 `aria-controls`를 갖고, 접으면 본문 영역에 `hidden`을 붙입니다.
+- 편지 접기 버튼은 `aria-expanded`와 `aria-controls`를 갖고, 접으면 본문 영역에 `hidden`을 붙입니다. 처음 상태는 접힘이라 HTML에 `aria-expanded="false"`, 본문 영역 `hidden`, 라벨 "펼쳐보기"로 둡니다. (ADR-063)
 - 센터 정보는 공개 HTML에 정적으로 둡니다. 주소는 `<address>` 텍스트 한 곳이며, 복사할 값과 지도 링크의 검색어는 이 텍스트에서 읽습니다. 지도 링크의 주소(`href`)는 JS가 이 텍스트로 만듭니다.
 - 주소 복사는 `navigator.clipboard.writeText`만 씁니다. 실패하면(API가 없거나 거부됨) 실패 문구를 보여 줍니다. 복사 결과 문구는 `role="status"` 영역에 같은 방식으로 다시 읽히게 갱신합니다.
 - 지도 링크는 새 탭(`target="_blank"`)이며 `rel="noopener noreferrer"`를 붙입니다.
+
+## 예약 안내 카드 구현 (ADR-061)
+
+- `article#card-booking`(`tabindex="-1"`, `aria-labelledby="booking-message"`)에 작은 라벨(`.booking-label`)과 본문 `h1#booking-message`만 둡니다. 문장 사이는 `<br>`로 줄을 바꾸고, 💌는 앞에 줄바꿈하지 않는 공백(`&nbsp;`)을 두어 홀로 한 줄에 남지 않게 하며 `aria-hidden`입니다.
+- 마지막 카드이므로 `data-next`가 없고, 버튼·링크·입력창을 두지 않습니다. `tests/page.test.mjs`가 이 규칙을 파일 검사로 지킵니다. (ADR-062)
+
+## 페이지 구조 테스트 (ADR-062)
+
+- `tests/page.test.mjs`가 `index.html`, `screens.js`, 설계 문서(02, 01)를 글자로 읽어 카드 순서와 속성, 편지 처음 상태(접힘, ADR-063), 문구 일치, 메타, 접근성 규칙, 외부 주소 허용 목록, 금지 API, 크기 예산, 암호문 구조를 검사합니다. 브라우저 동작은 `/preview-check`가 맡습니다.

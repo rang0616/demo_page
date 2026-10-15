@@ -436,6 +436,25 @@ a.button {
   color: var(--muted);
 }
 
+/* 예약 안내 카드 (ADR-061) */
+.booking {
+  padding: 48px 24px;
+  gap: 12px;
+}
+
+.booking-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.booking-message {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
 /* 폭죽 캔버스 (ADR-055) */
 .confetti {
   position: fixed;

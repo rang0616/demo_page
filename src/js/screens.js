@@ -14,7 +14,7 @@ const SCREEN_IDS = {
 };
 
 const OPEN_ANIMATION_MS = 900; // 상자 뚜껑 연출(CSS 0.8초) 뒤 약간의 여유. style.css의 transition과 짝입니다.
-const CARD_IDS = ['card-voucher', 'card-letter', 'card-center']; // 카드 순서는 이 배열 하나로 정합니다. (ADR-054, ADR-060)
+const CARD_IDS = ['card-voucher', 'card-letter', 'card-center', 'card-booking']; // 카드 순서는 이 배열 하나로 정합니다. (ADR-054, ADR-060, ADR-061)
 const NAVER_MAP_SEARCH = 'https://map.naver.com/p/search/';
 // 센터 카드의 안내 문구 (design/02 연출 문구). 시스템 문구라 반말입니다. (ADR-029)
 const COPY_MESSAGE = { done: '주소를 복사했어!', failed: '복사가 안 됐어. 주소를 길게 눌러서 복사해 줘.' };
@@ -114,7 +114,7 @@ export function renderLetter(letter) {
   }));
 }
 
-// 편지 접기/펼치기: 접으면 호칭만 남고 문단과 맺음말이 숨겨집니다. (ADR-060)
+// 편지 접기/펼치기: 접으면 호칭만 남고 문단과 맺음말이 숨겨집니다. 처음 상태는 접힘입니다. (ADR-060, ADR-063)
 const letterToggle = document.getElementById('letter-toggle');
 const letterBody = document.getElementById('letter-body');
 letterToggle.addEventListener('click', () => {

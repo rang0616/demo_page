@@ -46,7 +46,7 @@ Claude Code가 이 저장소에서 작업할 때 따를 기준입니다. 세부 
 ## 검증
 
 - 로컬 확인: 저장소 루트에서 `python3 -m http.server -d src`를 실행하고 `http://localhost:8000`을 엽니다. `file://`로 열면 암호문을 읽을 수 없습니다.
-- 자동 검사: `node --test tests/*.test.mjs`(정규화, 암호 왕복). 실제 암호문은 `node tools/encrypt.mjs --self-test`로 확인합니다.
+- 자동 검사: `node --test tests/*.test.mjs`(정규화, 암호 왕복, 페이지 구조). 실제 암호문은 `node tools/encrypt.mjs --self-test`로 확인합니다.
 - 확인 항목은 `design/08-dev-flow.md`의 전 버전 공통 조건과 각 버전 완료 조건입니다.
 - 확인하지 못한 항목은 PR이나 보고에 명시합니다.
 - 커맨드 `/preview-check`, `/check-links`는 `src/` 기준입니다.
