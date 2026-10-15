@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+
+# 개인 Claude Code 설정 (팀/공유 설정은 CLAUDE.md, .claude/settings.json)
+CLAUDE.local.md
+.claude/settings.local.json
+
+# 에디터
+.vscode/
+.idea/
+
+# 의존성/빌드 산출물 (현재 미사용, 도입 시 대비)
+node_modules/
+dist/
+
+# 비공개 자료 (정답, 편지 원문)
+design/private/
