@@ -54,8 +54,9 @@ body {
   max-width: 420px;
 }
 
-.screen[hidden] {
-  display: none;
+/* hidden 속성이 .card 등의 display 규칙에 덮이지 않게 합니다. */
+[hidden] {
+  display: none !important;
 }
 
 .card {
@@ -134,25 +135,235 @@ body {
   font-size: 0.9375rem;
 }
 
-.notice {
-  color: var(--muted);
-}
-
 .noscript-notice {
   padding: 24px var(--gutter);
   text-align: center;
   color: var(--text);
 }
 
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
+/* 선물 상자 (ADR-053). 모두 CSS로 그립니다. */
+.gift-card {
+  padding: 40px 24px;
+}
+
+.gift-card .question {
+  order: 2;
+}
+
+.gift {
+  order: 1;
+  align-self: center;
+  width: 168px;
+  height: 168px;
+  padding: 0;
+  background: none;
   border: 0;
+  border-radius: var(--radius-card);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.gift:focus-visible {
+  outline: 3px solid var(--text);
+  outline-offset: 4px;
+}
+
+.gift-box {
+  position: relative;
+  display: block;
+  width: 140px;
+  height: 140px;
+  margin: 14px auto 0;
+  animation: gift-float 3s ease-in-out infinite;
+}
+
+.gift-body {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 0;
+  height: 86px;
+  background: var(--accent);
+  border-radius: 14px;
+}
+
+.gift-body::before,
+.gift-lid::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 22px;
+  transform: translateX(-50%);
+  background: var(--accent-sub);
+}
+
+.gift-lid {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 26px;
+  height: 38px;
+  z-index: 2;
+  background: var(--accent-hover);
+  border-radius: 12px;
+  transform-origin: 20% 100%;
+  /* 0.8초는 screens.js의 OPEN_ANIMATION_MS(0.9초)와 짝입니다. 한쪽을 바꾸면 다른 쪽도 맞춥니다. */
+  transition: transform 0.8s cubic-bezier(0.3, 1.4, 0.5, 1), opacity 0.8s ease;
+}
+
+.gift-lid::before {
+  border-radius: 2px;
+}
+
+.gift-bow {
+  position: absolute;
+  left: 50%;
+  top: -20px;
+  width: 44px;
+  height: 24px;
+  transform: translateX(-50%);
+  z-index: 3;
+}
+
+.gift-bow::before,
+.gift-bow::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 22px;
+  height: 22px;
+  background: var(--accent-sub);
+  border-radius: 60% 40% 60% 40%;
+}
+
+.gift-bow::before {
+  left: 0;
+  transform: rotate(-20deg);
+}
+
+.gift-bow::after {
+  right: 0;
+  transform: rotate(20deg) scaleX(-1);
+}
+
+.gift.opening .gift-lid {
+  transform: translateY(-46px) rotate(-14deg);
+  opacity: 0;
+}
+
+/* 떠오르는 움직임은 멈춰 둡니다. 없애면 상자가 툭 내려앉습니다. (ADR-054) */
+.gift.opening .gift-box {
+  animation-play-state: paused;
+}
+
+@keyframes gift-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+/* 카드 등장 연출 "빠밤" (ADR-056). 두 번 통통 튀며, 팡파레의 두 박자와 맞춥니다.
+   20%(0.14초)가 "빠", 40%(0.28초)가 "밤!"입니다. sound.js의 playFanfare 박자(0.13초, 0.28초)와 짝이므로
+   한쪽을 바꾸면 다른 쪽도 맞춥니다. */
+@keyframes card-pop {
+  0%   { opacity: 0;    transform: translateY(20px) scale(0.88); }
+  20%  { opacity: 0.6;  transform: translateY(2px) scale(1.02); }    /* 빠: 작게 한 번 */
+  30%  { opacity: 0.85; transform: translateY(8px) scale(0.97); }    /* 살짝 가라앉음 */
+  40%  { opacity: 1;    transform: translateY(-6px) scale(1.06); }   /* 밤!: 크게 한 번 */
+  65%  { opacity: 1;    transform: translateY(1px) scale(0.99); }
+  100% { opacity: 1;    transform: none; }
+}
+
+/* backwards: 시작 전에만 첫 키프레임을 적용하고, 끝난 뒤에는 연출 상태를 풀어 줍니다. */
+[data-card]:not([hidden]) {
+  animation: card-pop 0.7s ease-out backwards;
+}
+
+/* 폭죽 캔버스 (ADR-055) */
+.confetti {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 20;
+  pointer-events: none;
+}
+
+/* 바우처 카드 */
+.voucher {
+  gap: 10px;
+}
+
+/* 카드는 포커스를 받지만 윤곽선은 보이지 않게 합니다. */
+[data-card]:focus {
+  outline: none;
+}
+
+/* 로고는 카드 안쪽 폭에 맞춰 최대 300px로 보여 줍니다. 원본이 720px라 화면 밀도가 높아도 선명합니다. (ADR-056) */
+.logo {
+  display: block;
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  margin: 0 auto 4px;
+  border-radius: 12px;
+}
+
+.voucher-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.voucher-badge {
+  align-self: center;
+  padding: 4px 14px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: var(--accent-sub);
+  border-radius: var(--radius-pill);
+}
+
+.voucher-title {
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.45;
+  outline: none;
+}
+
+.voucher-subtitle {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+
+.voucher-rows {
+  display: flex;
+  flex-direction: column;
+  margin: 6px 0 8px;
+  text-align: left;
+}
+
+.voucher-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px dashed var(--accent);
+}
+
+.voucher-row dt {
+  flex: 0 0 auto;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.voucher-row dd {
+  font-weight: 600;
+  text-align: right;
 }
 
 @media (prefers-reduced-motion: reduce) {

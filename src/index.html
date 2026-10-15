@@ -48,14 +48,45 @@
       </div>
     </section>
 
-    <!-- 잠금 해제 후 화면 (v0.1 임시 화면. 카드 화면은 v0.2부터) -->
-    <section id="screen-unlocked" class="screen" aria-labelledby="unlocked-title" hidden>
-      <div class="card">
-        <h1 id="unlocked-title" class="question" tabindex="-1">잠금이 풀렸어!</h1>
-        <p class="notice">다음 화면은 곧 준비돼.</p>
+    <!-- 선물 상자 화면 (ADR-053). 상자는 장식이므로 스크린리더에는 숨기고 버튼 이름으로 알립니다. -->
+    <section id="screen-gift" class="screen" aria-labelledby="gift-hint" hidden>
+      <div class="card gift-card">
+        <h1 id="gift-hint" class="question" tabindex="-1">상자를 눌러서 열어 봐</h1>
+        <button id="gift-button" type="button" class="gift" aria-label="선물 상자 열기">
+          <span class="gift-box" aria-hidden="true">
+            <span class="gift-lid"><span class="gift-bow"></span></span>
+            <span class="gift-body"></span>
+          </span>
+        </button>
       </div>
     </section>
+
+    <!-- 카드 화면: 카드를 한 장씩 넘깁니다. (ADR-047, ADR-053) -->
+    <section id="screen-cards" class="screen" hidden>
+      <article id="card-voucher" class="card voucher" data-card tabindex="-1" hidden aria-labelledby="voucher-title">
+        <img class="logo" src="img/logo.jpg" width="720" height="207" alt="리스파이어랩 로고">
+        <p id="voucher-label" class="voucher-label"></p>
+        <p id="voucher-badge" class="voucher-badge"></p>
+        <h1 id="voucher-title" class="voucher-title"></h1>
+        <p id="voucher-subtitle" class="voucher-subtitle"></p>
+        <dl class="voucher-rows">
+          <div class="voucher-row"><dt>Recipient</dt><dd id="voucher-recipient"></dd></div>
+          <div class="voucher-row"><dt>Occasion</dt><dd id="voucher-occasion"></dd></div>
+          <div class="voucher-row"><dt>Center</dt><dd id="voucher-center"></dd></div>
+          <div class="voucher-row"><dt>Care Type</dt><dd id="voucher-careType"></dd></div>
+        </dl>
+        <button type="button" class="button" data-next>다음</button>
+      </article>
+
+      <!-- 임시 카드: v0.3에서 편지 카드가 생기면 삭제합니다. -->
+      <article id="card-temp" class="card" data-card tabindex="-1" hidden aria-labelledby="temp-title">
+        <h1 id="temp-title" class="question">다음 카드는 곧 준비돼.</h1>
+      </article>
+    </section>
   </main>
+
+  <!-- 폭죽용 캔버스 (ADR-055). 장식이므로 스크린리더에는 숨기고, 눌러도 아래로 통과합니다. -->
+  <canvas id="confetti" class="confetti" aria-hidden="true" hidden></canvas>
 
   <script type="module" src="js/app.js"></script>
 </body>

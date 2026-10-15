@@ -28,9 +28,11 @@ demo_page/
 │   │   ├── app.js         #   시작점, 잠금 해제 흐름
 │   │   ├── normalize.js   #   정답 정규화 (도구와 공유)
 │   │   ├── crypto.js      #   키 파생, 복호화, 오류 구분
-│   │   └── screens.js     #   화면 전환, 상태 문구, 포커스
+│   │   ├── screens.js     #   화면과 카드 전환, 상태 문구, 포커스, 바우처 표시
+│   │   ├── sound.js       #   효과음 합성: 뿅, 짜잔 (WebAudio)
+│   │   └── confetti.js    #   폭죽 (캔버스)
 │   ├── data/              # 암호화된 본문 (letter.enc.json, 도구가 생성)
-│   └── img/               # 이미지 (로고, v0.2 이후)
+│   └── img/logo.jpg       # 센터 로고 (720×207)
 ├── tools/                 # 암호문 생성 도구 (배포 안 함)
 │   ├── encrypt.mjs        #   암호문 생성과 셀프 테스트
 │   └── voucher.json       #   바우처 값

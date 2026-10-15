@@ -1,10 +1,12 @@
 // 시작점: 잠금 해제 흐름을 연결합니다. (ADR-040, ADR-042, ADR-043, ADR-051)
-// 상태는 단일 변수 state에 둡니다: 'locked' | 'decrypting' | 'error' | 'unlocked'
+// 상태는 단일 변수 state에 둡니다: 'locked' | 'decrypting' | 'error' | 'gift' | 'opening' | 'cards'
 
 import { normalizeAnswer } from './normalize.js';
 import { UnlockError, decryptEnvelope } from './crypto.js';
+import { playFanfare, playPop } from './sound.js';
 import {
-  clearAnswer, focusInput, getAnswer, onSubmit, setBusy, setStatus, showError, showScreen,
+  clearAnswer, focusInput, getAnswer, onGiftOpen, onSubmit, playOpening, renderVoucher, setBusy,
+  setStatus, showError, showScreen, startCards,
 } from './screens.js';
 
 // 화면 문구 (design/01, ADR-033, ADR-043). 말투는 반말입니다. (ADR-029)
@@ -23,7 +25,7 @@ const FETCH_TIMEOUT_MS = 12000; // 응답이 없으면 네트워크 오류로 �
 
 let state = 'locked';
 let envelope = null; // 성공한 봉투는 메모리에 보관합니다.
-let unlockedPayload = null; // 복호화한 본문은 JS 변수에만 둡니다. DOM에 넣는 것은 v0.2 이후입니다.
+let unlockedPayload = null; // 복호화한 본문은 JS 변수에만 둡니다. 화면에는 필요한 부분만 textContent로 넣습니다.
 
 function isSecureContextAvailable() {
   return globalThis.isSecureContext !== false && Boolean(globalThis.crypto && globalThis.crypto.subtle);
@@ -99,11 +101,32 @@ async function handleSubmit() {
     return;
   }
 
-  state = 'unlocked';
+  // 잠금 해제: 바우처 값을 채워 두고 선물 상자 화면을 보여 줍니다. (ADR-053)
+  state = 'gift';
   clearAnswer();
   setStatus('');
-  showScreen('unlocked');
+  renderVoucher(unlockedPayload.voucher);
+  showScreen('gift');
+}
+
+function prefersReducedMotion() {
+  return Boolean(globalThis.matchMedia && globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+
+// 상자를 누르면 "뿅" 소리와 폭죽, 뚜껑 연출 뒤에 첫 카드로 넘어가며 "짜잔" 소리가 납니다. (ADR-055)
+// 연출 중에는 다시 눌러도 반응하지 않습니다.
+async function handleGiftOpen() {
+  if (state !== 'gift') return;
+  state = 'opening';
+  playPop(); // 사용자가 누른 이벤트 안에서 호출해야 소리가 납니다.
+  const reducedMotion = prefersReducedMotion();
+  await playOpening({ reducedMotion });
+  state = 'cards';
+  startCards();
+  // 모션 감소 설정에서는 연출 없이 바로 이어지므로, 앞 소리와 겹치지 않게 조금 늦춥니다.
+  playFanfare({ delay: reducedMotion ? 0.35 : 0 });
 }
 
 onSubmit(handleSubmit);
+onGiftOpen(handleGiftOpen);
 setBusy(false); // 제출 버튼은 HTML에서 비활성으로 시작합니다. 연결이 끝났으니 활성화합니다.
