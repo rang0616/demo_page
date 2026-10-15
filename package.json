@@ -1,0 +1,12 @@
+{
+  "name": "demo-page",
+  "private": true,
+  "type": "module",
+  "description": "정적 페이지. 의존성 없음. 배포는 src/만 합니다.",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "encrypt": "node tools/encrypt.mjs",
+    "self-test": "node tools/encrypt.mjs --self-test",
+    "serve": "python3 -m http.server -d src"
+  }
+}

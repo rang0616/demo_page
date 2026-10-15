@@ -32,7 +32,7 @@
 
 1. `design/private/secrets.md`에서 정답과 편지 원문을 확인합니다. (이 파일은 저장소 밖으로 내보내지 않습니다)
 2. `tools/encrypt.mjs`를 실행합니다. 도구는 `secrets.md`의 `편지 원문` 아래 첫 코드 블록만 읽습니다. `정답:` 줄은 읽지 않습니다. 블록을 찾지 못하면 실패합니다. (ADR-042) 정답은 실행 중 프롬프트에 입력합니다(입력값이 화면에 보이지 않게). 명령 인자나 환경 변수로 넘기지 않으며, 정답을 담은 파일을 만들지 않습니다.
-3. 결과물 `docs/data/letter.enc.json`만 갱신합니다. 정답이나 원문이 `docs/`에 평문으로 들어가면 안 됩니다.
+3. 결과물 `src/data/letter.enc.json`만 갱신합니다. 정답이나 원문이 `src/`에 평문으로 들어가면 안 됩니다.
 4. 복호화 테스트: 도구에 셀프 테스트 옵션으로 정답을 다시 넣어 본문이 원문과 같은지 확인하고, 틀린 정답에서는 실패하는지 확인합니다. Node는 내장 `crypto`만 씁니다.
 5. 커밋 전에 `git diff --cached`로 평문 편지나 정답이 없는지 확인합니다.
 
@@ -43,12 +43,12 @@
 - 정답 정규화(ADR-025)와 암호문 포맷(ADR-026)을 따릅니다.
 - 편지를 고치면 암호문을 다시 만듭니다. 절차는 아래 '암호문 재생성 절차'를 따릅니다.
 
-## 파일 구성 (ADR-020, ADR-022)
+## 파일 구성 (ADR-020, ADR-050)
 
 암호문의 내용은 ADR-026의 스키마를 따릅니다. 센터 정보는 잠금과 상관없이 공개 HTML에 둡니다.
 
 ```
-docs/                    # 배포 폴더 (GitHub Pages 소스, ADR-022)
+src/                    # 배포 폴더 (GitHub Actions로 배포, ADR-050)
   index.html             # 구조와 문구
   css/style.css          # 스타일
   js/normalize.js        # 정답 정규화 (순수 함수, 도구와 공유, ADR-039)
@@ -58,7 +58,7 @@ docs/                    # 배포 폴더 (GitHub Pages 소스, ADR-022)
   data/letter.enc.json   # 암호화된 본문 (생성 결과물)
   img/logo.png           # 센터 로고 (가로 240px 이하, 30KB 이하, ADR-048)
 tools/encrypt.mjs        # 암호문 생성 (일회성, 배포 파일 아님, ADR-038)
-tests/                   # 정규화 테스트 (배포 안 함, ADR-039)
+tests/                   # 정규화·암호 왕복 테스트 (배포 안 함, ADR-039, ADR-049)
 tools/voucher.json       # 바우처 8개 값 (02 표와 같아야 함, ADR-042)
 package.json             # {"type":"module"}, 의존성 없음 (ADR-043)
 design/                  # 설계 문서 (SoT, 배포하지 않음)
@@ -66,7 +66,7 @@ design/private/          # 정답과 편지 원문 (Git 제외)
 CLAUDE.md, .claude/      # 작업 규칙과 설정
 ```
 
-- 배포되는 것은 `docs/`뿐입니다. 설계 문서와 도구는 배포되지 않습니다.
+- 배포되는 것은 `src/`뿐입니다. 설계 문서와 도구는 배포되지 않습니다.
 - 데모의 단일 파일 원칙(`archive/v0-demo/05-architecture.md`)은 CSS와 JS를 분리하는 것으로 대체되었습니다. (ADR-020)
 
 ## 카카오톡 미리보기와 메타
@@ -83,19 +83,28 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 
 이 목록에 없는 호스트는 추가하기 전에 `06-decisions.md`에 먼저 기록합니다.
 
+## 배포 (ADR-050)
+
+- Pages 소스는 "GitHub Actions"입니다. `.github/workflows/pages.yml`을 둡니다.
+- 트리거: `main` push와 수동 실행. 단계: 체크아웃 → Node 20 설정 → `node --test tests/*.test.mjs` → `src/`를 아티팩트로 업로드 → Pages 배포.
+- 권한: `contents: read`, `pages: write`, `id-token: write`. 동시 배포는 하나로 제한합니다.
+- 배포되는 것은 `src/`뿐입니다. `design/`, `tools/`, `tests/`, `package.json`은 올라가지 않습니다.
+- 사용 액션은 버전을 고정합니다.
+- 사용자 설정: Settings → Pages → Source를 "GitHub Actions"로 바꿉니다. 워크플로 파일 push에는 토큰의 Workflows 쓰기 권한이 필요합니다.
+
 ## 저장소 공개 범위
 
 - 현재 저장소는 공개입니다. 암호문과 페이지가 누구나 볼 수 있는 상태가 됩니다.
 - 설계 문서(`design/`)도 공개되어 있어, 선물 내용이 검색될 수 있습니다. 프로젝트 규모와 임시 배포를 고려해 공개를 유지합니다. (ADR-034)
 - 참고: 지금 라이브 사이트(루트 `index.html`, 데모)에는 편지 원문이 평문으로 들어 있습니다. 공개를 허용했고 곧 내릴 예정입니다. (ADR-023)
-- 로컬 확인은 `python3 -m http.server -d docs`로 합니다. `file://`로 열면 암호문 `fetch`가 막힙니다.
+- 로컬 확인은 `python3 -m http.server -d src`로 합니다. `file://`로 열면 암호문 `fetch`가 막힙니다.
 - 비공개 저장소로 바꾸면 GitHub Pages 공개 방식이 달라질 수 있습니다. ADR-009: 공개 유지로 확정.
 
 ## 접근성·성능
 
 - 확대 축소를 막지 않습니다.
 - 로고 이미지의 alt는 "리스파이어랩 로고"입니다. (ADR-048)
-- 파일 크기는 `docs/` 합계 200KB 이하이며 글꼴은 제외합니다. (ADR-045)
+- 파일 크기는 `src/` 합계 200KB 이하이며 글꼴은 제외합니다. (ADR-045)
 - 암호문 복호화(PBKDF2 600,000회)는 중간 사양 갤럭시에서 3초 이내여야 합니다. 로딩 표시로 대응합니다. (ADR-045)
 
 ## 도구 계약 (ADR-038)
@@ -103,7 +112,7 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 - 실행 환경: Node 20 이상. 내장 모듈만 씁니다.
 - 실행: 저장소 루트에서 `node tools/encrypt.mjs`. 셀프 테스트는 `node tools/encrypt.mjs --self-test`.
 - 입력: `design/private/secrets.md`. 정답은 실행 중 TTY 프롬프트에서 입력하며 화면에 보이지 않습니다(에코 없음).
-- 출력: `docs/data/letter.enc.json` 하나뿐입니다. 임시 파일에 쓴 뒤 이름을 바꿔서, 실패하면 기존 파일을 건드리지 않습니다.
+- 출력: `src/data/letter.enc.json` 하나뿐입니다. 임시 파일에 쓴 뒤 이름을 바꿔서, 실패하면 기존 파일을 건드리지 않습니다.
 - 종료 코드: 성공 0, 실패 1. 실패 메시지에는 정답이나 원문을 담지 않습니다.
 - `--self-test`: 정답을 다시 입력해 복호화하고 원문과 같은지 확인합니다. 아래 세 케이스를 모두 통과해야 합니다.
   1. 올바른 정답 → 원문과 일치
@@ -112,9 +121,9 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 
 ## 테스트 (ADR-039)
 
-- 정규화 함수는 `docs/js/normalize.js` 한 곳에만 둡니다. 페이지와 도구가 같은 파일을 import합니다.
-- `tests/normalize.test.mjs`가 `node --test tests/`로 ADR-025의 테스트 표를 검증합니다.
-- 암호 왕복은 `--self-test`가 맡습니다. 페이지의 복호화는 수동 체크리스트로 확인합니다(08 검증 절).
+- 정규화 함수는 `src/js/normalize.js` 한 곳에만 둡니다. 페이지와 도구가 같은 파일을 import합니다.
+- `tests/normalize.test.mjs`가 `node --test tests/*.test.mjs`로 ADR-025의 테스트 표를 검증합니다.
+- 암호 왕복은 `--self-test`와 `tests/crypto.test.mjs`(가짜 정답과 가짜 본문 사용)가 맡습니다. 페이지의 복호화는 수동 체크리스트로 확인합니다(08 검증 절). (ADR-049)
 
 ## 복호화 오류 처리와 봉투 버전 (ADR-040)
 
@@ -131,10 +140,17 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 - 잠금, 상자, 카드들은 한 화면 단위로 바꿉니다. 뒤로 가기는 없습니다. (ADR-047)
 - 상태 흐름: `locked → decrypting → locked(틀림·네트워크 오류, 입력 유지) | error(데이터·버전)`, `decrypting → unlocked`.
 - 잠금 해제 후에는 카드를 한 장씩 넘깁니다: 효과음과 상자 연출 → 바우처 → 편지 → 센터 안내 → 예약 문구. 카드를 탭하거나 "다음" 버튼을 누르면 넘어갑니다. (ADR-047)
-- 화면 전환 후 새 섹션 제목에 `tabindex="-1"`로 포커스를 옮깁니다. 오류와 대기 문구는 `role="status"`로 알립니다.
+- 화면 전환 후 새 섹션 제목에 `tabindex="-1"`로 포커스를 옮깁니다. 대기·틀림 문구는 `role="status"`, 오류 화면은 `role="alert"`로 알립니다. (ADR-051)
 - 모듈 역할: `normalize.js`(순수 함수), `crypto.js`(키 파생, 복호화, 오류 구분), `screens.js`(카드 표시, 이동, 포커스), `app.js`(흐름 연결).
 
 ## 보조 규칙 (ADR-042, ADR-043)
 
 - 보안 컨텍스트 검사는 `fetch` 전에 수행합니다. 아니면 `error` 상태이며 문구는 01의 오류 문구 절을 따릅니다.
 - `--self-test`는 TTY에서만 실행됩니다. 비TTY에서는 종료 코드 1입니다. 작성된 파일을 다시 읽어 검사합니다.
+
+## 구현 세부 (ADR-051)
+
+- 폼: 입력창에 `name` 속성을 두지 않고 제출 버튼은 HTML에서 비활성으로 시작합니다. JS가 연결되면 활성화합니다. JS가 꺼져 있으면 폼을 숨깁니다. 정답이 주소(URL)에 남지 않게 하기 위해서입니다.
+- 요청: `fetch`는 12초 후 네트워크 오류로 처리합니다.
+- 오류 분류: `v` 없음·배열 → 데이터 오류, `v`가 1이 아님 → 버전 오류, `OperationError` → 틀린 답, 그 밖 예외 → 데이터 오류.
+- 도구: 절 경계를 넘어 코드 블록을 찾지 않습니다. 쓴 파일을 다시 읽어 검증하고, 실패하면 임시 파일을 지웁니다.

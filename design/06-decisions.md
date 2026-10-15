@@ -399,3 +399,45 @@ ADR-032는 결번입니다.
 - 배경: 센터 로고를 카드 상단에 두면 바우처가 더 분명해집니다.
 - 결정: 로고는 `docs/img/logo.png`로 옮겨 씁니다. 가로 240px 이하, 30KB 이하로 줄입니다. 바우처 카드 맨 위에 표시하고, alt는 "리스파이어랩 로고"입니다. 루트의 원본 파일은 v0.5에서 지웁니다.
 - 영향: `01-experience-flow.md`, `05-architecture.md`, `08-dev-flow.md`
+
+## ADR-049. 암호 왕복 단위 테스트를 추가하고 테스트 명령을 고친다
+- 날짜: 2026-10-15
+- 상태: 확정
+- 배경: 구현 중, Node 22 이상에서는 `node --test tests/`가 폴더 인자를 인식하지 못했습니다. 또 암호 왕복과 오류 구분은 가짜 정답으로 자동 검증할 수 있었습니다.
+- 결정: 테스트 명령을 `node --test tests/*.test.mjs`로 바꿉니다. `tests/crypto.test.mjs`를 추가해 왕복, 틀린 정답, 변조, 버전·길이 오류, 평문 구조 오류를 가짜 정답으로 검증합니다. 실제 정답과 원문은 쓰지 않습니다.
+- 영향: `05-architecture.md`, `08-dev-flow.md`, `CLAUDE.md`, `README.md`, `package.json`
+
+## ADR-050. 배포 코드는 src/에 두고 GitHub Actions로 배포한다 (ADR-022 대체)
+- 날짜: 2026-10-15
+- 상태: 확정 (ADR-022 대체)
+- 배경: 소스 코드를 `src/` 아래에 두고 싶다는 요청이 있었습니다. 브랜치 배포 방식의 Pages는 소스 폴더로 루트나 `/docs`만 지정할 수 있습니다. GitHub Actions 방식은 폴더 제한이 없습니다.
+- 결정:
+  - 배포되는 코드(`index.html`, `css/`, `js/`, `data/`, `img/`)는 `src/`에 둡니다.
+  - Pages 소스는 "GitHub Actions"로 설정합니다. `.github/workflows/pages.yml`이 `main` push 때 단위 테스트를 돌린 뒤 `src/`를 그대로 올려 배포합니다. 빌드나 변환은 하지 않습니다.
+  - `tools/`, `tests/`, `package.json`은 루트에 두며 배포하지 않습니다.
+  - 이전 ADR(019~049)에 적힌 `docs/` 경로는 `src/`로 읽습니다. 로고 경로는 `src/img/logo.png`입니다.
+- 영향: `05-architecture.md`, `08-dev-flow.md`, `README.md`, `CLAUDE.md`, `package.json`, `.github/workflows/pages.yml`
+- 설정 필요(사용자): 저장소 Settings → Pages → Source를 "GitHub Actions"로 변경. 워크플로 파일을 push하려면 토큰에 Workflows 쓰기 권한이 필요합니다.
+
+## ADR-051. v0.1 코드 리뷰 지적을 반영해 세부 규칙을 정한다
+- 날짜: 2026-10-15
+- 상태: 확정
+- 배경: Opus 5.5 코드 리뷰(Blocker 0, Major 2, Minor 14)에서 설계 보강이 필요한 항목이 나왔습니다.
+- 결정:
+  - 폼 안전: 정답이 주소(URL)에 남지 않도록 입력창에 `name` 속성을 두지 않고, 제출 버튼은 HTML에서 비활성으로 시작해 JS가 연결된 뒤 활성화합니다. JS가 꺼져 있으면 폼을 숨깁니다.
+  - 색 토큰 추가(ADR-024 범위 안의 조정): `--accent-hover #F8BDBD`(글자 대비 6.27:1), `--accent-border #C4757D`(흰 배경 3.39:1, 배경색 3.23:1). 포커스 링은 본문 글자색을 씁니다.
+  - 요청 시간 제한: `fetch`는 12초가 지나면 네트워크 오류로 처리합니다.
+  - 정규화(ADR-025 3항 명확화): 숫자 묶음이 둘이면 각 묶음의 자릿수는 제한하지 않습니다. 값만 월 1~12, 일 1~31이면 됩니다. 예: `003/05`.
+  - 편지 문단: 문단 앞뒤의 공백은 보존하고, 앞뒤의 빈 줄만 제거합니다. (ADR-007)
+  - 오류 분류(ADR-040 명확화): 봉투에 `v`가 없거나 배열이면 데이터 오류입니다. `v`가 있지만 1이 아니면 버전 오류입니다. 복호화 예외 중 `OperationError`만 틀린 답이고, 그 밖은 데이터 오류입니다.
+  - 도구: `secrets.md`는 "편지 원문" 절 안에서만 코드 블록을 찾습니다(다음 제목을 만나면 실패). 파일을 쓴 뒤 다시 읽어 검증하고, 실패하면 임시 파일을 지웁니다. 임시 파일은 `.gitignore`에 둡니다.
+  - 접근성: 입력창은 화면의 질문을 이름으로 씁니다(`aria-labelledby`). 오류 화면은 `role="alert"`입니다. 같은 문구가 반복돼도 다시 읽히도록 상태 문구를 비운 뒤 다시 씁니다.
+  - 테스트: 잘못된 base64, ct 길이 부족, 암호 이름 불일치, 평문 JSON 아님, 편지 항목 타입 오류, `v` 누락, 정규화 추가 입력, 절 경계 파싱을 추가합니다.
+- 영향: `01-experience-flow.md`, `04-design-system.md`, `05-architecture.md`, `docs`→`src`의 코드, `tests/`, `tools/encrypt.mjs`, `.gitignore`
+
+## ADR-052. 일정과 진척은 schedule/ 디렉토리에서 관리한다
+- 날짜: 2026-10-15
+- 상태: 확정
+- 배경: 토요일(10/17) 배포를 목표로 하루하루 진행률을 보고 싶다는 요청이 있었습니다.
+- 결정: 루트에 `schedule/`을 둡니다. `README.md`에 전체 현황과 계산 규칙을, `YYYY-MM-DD.md`에 일별 작업과 진행률을 적습니다. 작업 단위는 버전 브랜치(PR 단위)입니다. 작업이 끝날 때마다 체크박스와 진행률을 갱신합니다. 이 디렉토리는 배포하지 않습니다.
+- 영향: `README.md`, `08-dev-flow.md`, `schedule/`

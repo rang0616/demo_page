@@ -1,0 +1,165 @@
+/* 디자인 시스템 (design/04). 색은 핑크 계열 첫 버전이며 결과를 보고 조정합니다. (ADR-024) */
+
+:root {
+  --bg: #FFF8F4;
+  --card: #FFFFFF;
+  --accent: #F4A7A7;
+  --accent-hover: #F8BDBD;   /* 글자 대비 6.27:1 (ADR-051) */
+  --accent-border: #C4757D;  /* 흰 배경 3.39:1, 배경색 3.23:1 (ADR-051) */
+  --accent-sub: #BFD8C8;
+  --text: #4A3F3F;
+  --muted: #7A6B6B;
+
+  --font-body: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont,
+    'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
+  --font-letter: 'Nanum Pen Script', var(--font-body);
+
+  --radius-card: 24px;
+  --radius-pill: 999px;
+  --shadow-card: 0 8px 24px rgba(184, 140, 140, 0.18);
+  --gutter: 16px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  line-height: 1.6;
+  word-break: keep-all;
+}
+
+#app {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--gutter);
+}
+
+.screen {
+  width: 100%;
+  max-width: 420px;
+}
+
+.screen[hidden] {
+  display: none;
+}
+
+.card {
+  background: var(--card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: center;
+}
+
+.question {
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.45;
+  outline: none;
+}
+
+.field {
+  width: 100%;
+  padding: 14px 20px;
+  font: inherit;
+  font-size: 1.125rem;
+  text-align: center;
+  color: var(--text);
+  background: var(--bg);
+  border: 2px solid var(--accent-border);
+  border-radius: var(--radius-pill);
+}
+
+.field:focus-visible {
+  outline: 3px solid var(--text);
+  outline-offset: 2px;
+}
+
+.button {
+  width: 100%;
+  padding: 14px 20px;
+  font: inherit;
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--accent);
+  border: 0;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+@media (hover: hover) {
+  .button:hover:not(:disabled) {
+    background: var(--accent-hover);
+  }
+}
+
+.button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.button:focus-visible {
+  outline: 3px solid var(--text);
+  outline-offset: 2px;
+}
+
+.button:disabled,
+.field:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.status {
+  min-height: 1.6em;
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+
+.notice {
+  color: var(--muted);
+}
+
+.noscript-notice {
+  padding: 24px var(--gutter);
+  text-align: center;
+  color: var(--text);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
