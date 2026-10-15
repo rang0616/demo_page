@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>선물이 도착했어요</title>
+  <meta name="description" content="열어 보려면 링크를 눌러 주세요">
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#FFF8F4">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="선물이 도착했어요">
+  <meta property="og:description" content="열어 보려면 링크를 눌러 주세요">
+
+  <!-- 허용 외부 호스트: cdn.jsdelivr.net, fonts.googleapis.com, fonts.gstatic.com (design/05) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap">
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- JS가 꺼져 있으면 폼을 숨깁니다. 정답이 주소(URL)에 남지 않게 하기 위해서입니다. (ADR-051) -->
+  <noscript><style>#app { display: none; }</style></noscript>
+</head>
+<body>
+  <noscript>
+    <p class="noscript-notice">이 페이지는 자바스크립트가 필요해. 브라우저 설정에서 켜 줘.</p>
+  </noscript>
+
+  <main id="app">
+    <!-- 안내 화면 (첫 화면, ADR-057). 제목과 버튼만 두고, 장식은 제목의 이모지 둘(❤️, 🎁)뿐입니다. (ADR-058)
+         시작 버튼은 JS가 연결되기 전에는 비활성입니다. 연결되면 app.js가 활성화합니다. -->
+    <section id="screen-intro" class="screen" aria-labelledby="intro-title">
+      <div class="card intro-card">
+        <!-- 이모지는 장식이므로 스크린리더가 읽지 않게 합니다. 읽는 문장: "윰댕님! 선물이 도착했습니다." (ADR-058) -->
+        <h1 id="intro-title" class="question" tabindex="-1">윰댕님<span aria-hidden="true">❤️</span>!<br>선물<span aria-hidden="true">🎁</span>이 도착했습니다.</h1>
+        <button id="start-button" type="button" class="button" disabled>지금 바로 확인하기</button>
+      </div>
+    </section>
+
+    <!-- 잠금 화면 (안내 화면의 버튼을 누르면 나타납니다) -->
+    <section id="screen-lock" class="screen" aria-labelledby="lock-heading" hidden>
+      <!-- 입력창에 name 속성을 두지 않습니다. 기본 제출이 일어나도 값이 전송되지 않습니다. (ADR-051) -->
+      <form id="lock-form" class="card" autocomplete="off" novalidate>
+        <!-- 제목은 안내 두 줄과 질문을 함께 담습니다. 입력창의 이름은 질문만 씁니다. (ADR-059) -->
+        <h1 id="lock-heading" class="lock-heading" tabindex="-1">
+          <span class="lock-guide">신원을 확인하겠습니다.<br>아래 질문에 답을 해주세요.</span>
+          <span id="lock-question" class="question">휘와 윰댕이 사귄 날은?</span>
+        </h1>
+        <input id="answer" type="text" class="field"
+               aria-labelledby="lock-question" aria-describedby="status"
+               autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <!-- JS가 연결되기 전에는 비활성입니다. 연결되면 app.js가 활성화합니다. -->
+        <button id="submit" type="submit" class="button" disabled>열어 보기</button>
+        <p id="status" class="status" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <!-- 오류 화면 (데이터 오류, 버전 오류, 보안 컨텍스트 아님) -->
+    <section id="screen-error" class="screen" aria-labelledby="error-message" hidden>
+      <div class="card" role="alert">
+        <h1 id="error-message" class="question" tabindex="-1"></h1>
+      </div>
+    </section>
+
+    <!-- 선물 상자 화면 (ADR-053). 상자는 장식이므로 스크린리더에는 숨기고 버튼 이름으로 알립니다. -->
+    <section id="screen-gift" class="screen" aria-labelledby="gift-hint" hidden>
+      <div class="card gift-card">
+        <h1 id="gift-hint" class="question" tabindex="-1">상자를 눌러서 열어 봐</h1>
+        <!-- data-own-sound: 상자는 "뿅" 소리와 폭죽이 따로 있으므로 버튼 공통 "뾱"을 내지 않습니다. (ADR-058) -->
+        <button id="gift-button" type="button" class="gift" data-own-sound aria-label="선물 상자 열기">
+          <span class="gift-box" aria-hidden="true">
+            <span class="gift-lid"><span class="gift-bow"></span></span>
+            <span class="gift-body"></span>
+          </span>
+        </button>
+      </div>
+    </section>
+
+    <!-- 카드 화면: 카드를 한 장씩 넘깁니다. (ADR-047, ADR-053) -->
+    <section id="screen-cards" class="screen" hidden>
+      <article id="card-voucher" class="card voucher" data-card tabindex="-1" hidden aria-labelledby="voucher-title">
+        <img class="logo" src="img/logo.jpg" width="720" height="207" alt="리스파이어랩 로고">
+        <p id="voucher-label" class="voucher-label"></p>
+        <p id="voucher-badge" class="voucher-badge"></p>
+        <h1 id="voucher-title" class="voucher-title"></h1>
+        <p id="voucher-subtitle" class="voucher-subtitle"></p>
+        <dl class="voucher-rows">
+          <div class="voucher-row"><dt>Recipient</dt><dd id="voucher-recipient"></dd></div>
+          <div class="voucher-row"><dt>Occasion</dt><dd id="voucher-occasion"></dd></div>
+          <div class="voucher-row"><dt>Center</dt><dd id="voucher-center"></dd></div>
+          <div class="voucher-row"><dt>Care Type</dt><dd id="voucher-careType"></dd></div>
+        </dl>
+        <button type="button" class="button" data-next>다음</button>
+      </article>
+
+      <!-- 편지 카드 (ADR-060, 처음엔 접힘 ADR-063). 본문은 복호화한 값을 JS가 textContent로 채웁니다. -->
+      <article id="card-letter" class="card letter" data-card tabindex="-1" hidden aria-labelledby="letter-salutation">
+        <div class="letter-head">
+          <h1 id="letter-salutation" class="letter-salutation"></h1>
+          <button id="letter-toggle" type="button" class="toggle" aria-expanded="false" aria-controls="letter-body">펼쳐보기</button>
+        </div>
+        <div id="letter-body" class="letter-body" hidden>
+          <div id="letter-paragraphs" class="letter-paragraphs"></div>
+          <p id="letter-closing" class="letter-closing"></p>
+        </div>
+        <button type="button" class="button" data-next>다음</button>
+      </article>
+
+      <!-- 센터 안내 카드 (ADR-060). 공개 정보라 HTML에 정적으로 둡니다. "다음" 버튼으로 예약 안내 카드로 넘어갑니다. (ADR-061)
+           주소는 #center-address 한 곳에서만 관리합니다. 복사할 값과 지도 링크의 검색어는 이 텍스트에서 읽습니다. -->
+      <article id="card-center" class="card center" data-card tabindex="-1" hidden aria-labelledby="center-name">
+        <h1 id="center-name" class="center-name">리스파이어랩 양재점</h1>
+        <p class="center-notice">100% 사전 예약제 1:1 프라이빗 케어 센터</p>
+        <address id="center-address" class="center-address">서울특별시 서초구 강남대로 224</address>
+        <p class="center-access">양재역 3·4번 출구 도보 3분</p>
+        <div class="center-actions">
+          <button id="copy-address" type="button" class="button button-sub">주소 복사하기</button>
+          <a id="map-link" class="button button-sub" target="_blank" rel="noopener noreferrer">네이버 지도로 보기</a>
+        </div>
+        <p id="copy-status" class="status" role="status" aria-live="polite"></p>
+        <ul class="center-benefits">
+          <li><strong>애쓰지 않고 누워서 받는 쉼</strong><span>혼자서 힘겹게 하는 운동이 아니에요. 편안하게 호흡만 하면 물리치료사 출신 전문 스트레처가 온몸을 릴랙스해 줍니다.</span></li>
+          <li><strong>악기 연주로 틀어진 자세 &amp; 손·발 통증 케어</strong><span>어렸을 때부터 틀어진 체형과 고질적인 통증, 일하느라 뭉쳤던 몸을 체계적인 1:1 분석을 통해 시원하게 풀어드립니다.</span></li>
+          <li><strong>프라이빗 1:1 맞춤 케어 20회</strong><span>오직 윰댕의 컨디션에 맞춰 100% 예약제로 진행되는 프라이빗한 힐링 리커버리 시간이에요.</span></li>
+        </ul>
+        <button type="button" class="button" data-next>다음</button>
+      </article>
+
+      <!-- 예약 안내 카드 (ADR-061). 마지막 카드이며 입력·선택·버튼이 없습니다. 문구는 design/02 "예약 안내 문구"가 기준입니다.
+           💌는 장식이므로 스크린리더가 읽지 않게 합니다. -->
+      <article id="card-booking" class="card booking" data-card tabindex="-1" hidden aria-labelledby="booking-message">
+        <p class="booking-label">첫 예약 안내</p>
+        <h1 id="booking-message" class="booking-message">첫 예약은 내가 해줄게!<br>가능한 날짜를 나에게 말해줘!&nbsp;<span aria-hidden="true">💌</span></h1>
+      </article>
+    </section>
+  </main>
+
+  <!-- 폭죽용 캔버스 (ADR-055). 장식이므로 스크린리더에는 숨기고, 눌러도 아래로 통과합니다. -->
+  <canvas id="confetti" class="confetti" aria-hidden="true" hidden></canvas>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

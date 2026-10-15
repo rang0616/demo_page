@@ -14,16 +14,17 @@ Claude Code가 이 저장소에서 작업할 때 따를 기준입니다. 세부 
 ## 프로젝트
 
 - 윰댕에게 퇴사, 새 진로(대학원), 11/18 생일을 축하하며 센터 회원권을 서프라이즈로 전하는 비밀번호 잠금 페이지입니다.
-- 배포: https://rang0616.github.io/demo_page/ (Pages 소스는 `main`의 `/docs`)
+- 배포: https://rang0616.github.io/demo_page/ (GitHub Actions로 `src/`를 배포, ADR-050)
 - 스택: 정적 HTML, CSS, Vanilla JS. 빌드 도구와 프레임워크는 쓰지 않습니다.
 - 저장소 구조는 `README.md`를 봅니다.
 
 ## 작업 원칙
 
-- 구현 파일은 `docs/` 안에만 둡니다. CSS와 JS는 `docs/css/`, `docs/js/`로 나눕니다. (ADR-020, ADR-022)
+- **무엇을 고치든 먼저 영향 범위를 찾습니다.** 설계 문서, ADR 상태, 코드, 테스트, 점검표(`/preview-check`), 일정(`schedule/`), README를 모두 확인해 함께 고칩니다. 영향이 없는 곳도 확인했다고 보고합니다.
+- 배포되는 코드는 `src/` 안에만 둡니다. CSS와 JS는 `src/css/`, `src/js/`로 나눕니다. (ADR-020, ADR-050)
 - 외부 리소스는 허용 목록(`design/05-architecture.md`)만 씁니다. 버전은 고정합니다.
 - 편지와 센터 문구는 `design/02-content.md`가 기준입니다. 사용자가 요청하지 않으면 바꾸지 않습니다.
-- 정답과 편지 원문은 `design/private/`에만 둡니다. `docs/`나 커밋에 평문으로 넣지 않습니다.
+- 정답과 편지 원문은 `design/private/`에만 둡니다. `src/`나 커밋에 평문으로 넣지 않습니다.
 - 색상은 CSS 변수로만 정의하고, 값은 `design/04-design-system.md`를 따릅니다.
 - 화면 문구의 말투는 `design/` ADR-029를 따릅니다.
 
@@ -34,6 +35,7 @@ Claude Code가 이 저장소에서 작업할 때 따를 기준입니다. 세부 
 - 커밋, 푸시, PR 생성, 태그 생성은 사용자가 요청했을 때만 합니다.
 - 커밋 전에 `git diff --cached`로 `design/private/`, 정답, 토큰, 비밀번호가 없는지 확인합니다.
 - 절차는 `design/08-dev-flow.md`를 따릅니다.
+- 작업을 마치면 `schedule/`의 체크박스와 진행률을 갱신합니다. (ADR-052)
 
 ## 리뷰
 
@@ -43,14 +45,15 @@ Claude Code가 이 저장소에서 작업할 때 따를 기준입니다. 세부 
 
 ## 검증
 
-- 로컬 확인: 저장소 루트에서 `python3 -m http.server -d docs`를 실행하고 `http://localhost:8000`을 엽니다. `file://`로 열면 암호문을 읽을 수 없습니다.
+- 로컬 확인: 저장소 루트에서 `python3 -m http.server -d src`를 실행하고 `http://localhost:8000`을 엽니다. `file://`로 열면 암호문을 읽을 수 없습니다.
+- 자동 검사: `node --test tests/*.test.mjs`(정규화, 암호 왕복, 페이지 구조). 실제 암호문은 `node tools/encrypt.mjs --self-test`로 확인합니다.
 - 확인 항목은 `design/08-dev-flow.md`의 전 버전 공통 조건과 각 버전 완료 조건입니다.
 - 확인하지 못한 항목은 PR이나 보고에 명시합니다.
-- 커맨드 `/preview-check`, `/check-links`는 아직 데모 기준입니다. 구현 단계에서 `docs/` 기준으로 고칩니다.
+- 커맨드 `/preview-check`, `/check-links`는 `src/` 기준입니다.
 
 ## 하지 말아야 할 것
 
 - 개인정보(실명, 연락처, 계정)를 새로 추가하지 않습니다.
 - 자격 증명(토큰, 비밀번호)을 파일, 명령, 메모리에 넣지 않습니다.
-- `design/`이나 도구를 `docs/`에 넣어 배포하지 않습니다.
+- `design/`이나 도구를 `src/`에 넣어 배포하지 않습니다.
 - 사용자 승인 없이 `.claude/` 설정이나 권한 규칙을 바꾸지 않습니다.

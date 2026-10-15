@@ -15,3 +15,6 @@ dist/
 
 # 비공개 자료 (정답, 편지 원문)
 design/private/
+
+# 암호문 도구의 임시 파일
+src/data/*.tmp

@@ -1,0 +1,49 @@
+# main에 push되면 단위 테스트를 돌리고, 통과하면 src/ 를 그대로 GitHub Pages에 배포합니다. (ADR-050)
+# 빌드나 변환은 하지 않습니다. design/, tools/, tests/, package.json 은 배포되지 않습니다.
+# 사용자 설정: 저장소 Settings → Pages → Source 를 "GitHub Actions"로 바꿔야 합니다.
+
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 단위 테스트
+        run: node --test tests/*.test.mjs
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: 암호문 파일 확인
+        run: test -s src/data/letter.enc.json
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: src
+      - id: deployment
+        uses: actions/deploy-pages@v4
