@@ -5,7 +5,7 @@ import { normalizeAnswer } from './normalize.js';
 import { UnlockError, decryptEnvelope } from './crypto.js';
 import { enableTapSound, playFanfare, playPop } from './sound.js';
 import {
-  clearAnswer, focusInput, getAnswer, onGiftOpen, onStart, onSubmit, playOpening, renderVoucher, setBusy,
+  clearAnswer, focusInput, getAnswer, onGiftOpen, onStart, onSubmit, playOpening, renderLetter, renderVoucher, setBusy,
   setStatus, showError, showScreen, startCards,
 } from './screens.js';
 
@@ -106,6 +106,7 @@ async function handleSubmit() {
   clearAnswer();
   setStatus('');
   renderVoucher(unlockedPayload.voucher);
+  renderLetter(unlockedPayload.letter);
   showScreen('gift');
 }
 

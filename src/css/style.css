@@ -300,6 +300,142 @@ body {
   animation: card-pop 0.7s ease-out backwards;
 }
 
+/* 보조 버튼과 링크 버튼 (ADR-060). 주 버튼("다음")과 구분합니다. */
+a.button {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+}
+
+.button.button-sub {
+  background: var(--card);
+  border: 2px solid var(--accent-border);
+}
+
+@media (hover: hover) {
+  .button.button-sub:hover:not(:disabled) {
+    background: var(--bg);
+  }
+}
+
+/* 편지 카드 (ADR-060). 손글씨 느낌의 글꼴을 크게, 줄 간격은 넉넉하게. */
+.letter {
+  gap: 14px;
+  text-align: left;
+  font-family: var(--font-letter);
+  overflow-wrap: anywhere; /* 공백 없는 긴 글자가 카드 밖으로 넘치지 않게 합니다. (ADR-060) */
+}
+
+.letter .button,
+.letter .toggle {
+  font-family: var(--font-body);
+}
+
+.letter-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.letter-salutation {
+  min-width: 0; /* 긴 호칭이 접기 버튼을 밀어내지 않게 합니다. */
+  font-size: 1.75rem;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.toggle {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 8px 16px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--card);
+  border: 2px solid var(--accent-border);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+}
+
+.toggle:focus-visible {
+  outline: 3px solid var(--text);
+  outline-offset: 2px;
+}
+
+.letter-body,
+.letter-paragraphs {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.letter-paragraphs p,
+.letter-closing {
+  font-size: 1.5rem;
+  line-height: 1.75;
+  white-space: pre-line; /* 문단 안의 줄바꿈을 그대로 보여 줍니다. */
+}
+
+.letter-closing {
+  text-align: right;
+}
+
+/* 센터 안내 카드 (ADR-060) */
+.center {
+  gap: 12px;
+}
+
+.center-name {
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.center-notice,
+.center-access {
+  font-size: 0.9375rem;
+  color: var(--muted);
+}
+
+.center-address {
+  font-style: normal;
+  font-weight: 600;
+  user-select: text; /* 복사가 안 될 때 길게 눌러 직접 복사할 수 있게 합니다. */
+}
+
+.center-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 6px 0 0;
+}
+
+.center-benefits {
+  display: flex;
+  flex-direction: column;
+  margin-top: 4px;
+  list-style: none;
+  text-align: left;
+}
+
+.center-benefits li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 0;
+  border-top: 1px dashed var(--accent);
+}
+
+.center-benefits strong {
+  font-size: 1rem;
+}
+
+.center-benefits span {
+  font-size: 0.9375rem;
+  color: var(--muted);
+}
+
 /* 폭죽 캔버스 (ADR-055) */
 .confetti {
   position: fixed;

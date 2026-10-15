@@ -1,4 +1,5 @@
-// 화면과 카드 전환, 상태 문구, 포커스 이동, 바우처 표시 (ADR-047, ADR-053, ADR-054, ADR-055, ADR-057).
+// 화면과 카드 전환, 상태 문구, 포커스 이동, 바우처·편지 표시, 편지 접기, 센터 주소 복사와 지도 링크
+// (ADR-047, ADR-053, ADR-054, ADR-055, ADR-057, ADR-060).
 // 안내, 잠금, 오류, 선물 상자, 카드를 한 화면 단위로 바꿉니다. 뒤로 가기는 없습니다.
 
 import { burstConfetti } from './confetti.js';
@@ -13,7 +14,10 @@ const SCREEN_IDS = {
 };
 
 const OPEN_ANIMATION_MS = 900; // 상자 뚜껑 연출(CSS 0.8초) 뒤 약간의 여유. style.css의 transition과 짝입니다.
-const CARD_IDS = ['card-voucher', 'card-temp']; // 카드 순서는 이 배열 하나로 정합니다. (ADR-054)
+const CARD_IDS = ['card-voucher', 'card-letter', 'card-center']; // 카드 순서는 이 배열 하나로 정합니다. (ADR-054, ADR-060)
+const NAVER_MAP_SEARCH = 'https://map.naver.com/p/search/';
+// 센터 카드의 안내 문구 (design/02 연출 문구). 시스템 문구라 반말입니다. (ADR-029)
+const COPY_MESSAGE = { done: '주소를 복사했어!', failed: '복사가 안 됐어. 주소를 길게 눌러서 복사해 줘.' };
 const CARD_GUARD_MS = 400; // 카드가 나타난 직후의 "다음" 탭은 무시합니다. (ADR-054) 등장 연출(0.7초)의 "밤!" 지점 뒤까지 막습니다.
 
 const startButton = document.getElementById('start-button');
@@ -25,7 +29,7 @@ const errorMessage = document.getElementById('error-message');
 const giftButton = document.getElementById('gift-button');
 const cardsScreen = document.getElementById(SCREEN_IDS.cards);
 
-let statusTimer = null;
+const announceTimers = new WeakMap();
 let cardIndex = 0;
 let cardShownAt = 0;
 
@@ -43,12 +47,16 @@ export function showScreen(name) {
 }
 
 // 상태 문구를 바꿉니다. 같은 문구가 반복돼도 스크린리더가 다시 읽도록
-// 먼저 비운 뒤 잠시 후에 넣습니다. (ADR-051)
-export function setStatus(text) {
-  clearTimeout(statusTimer);
-  status.textContent = '';
+// 먼저 비운 뒤 잠시 후에 넣습니다. (ADR-051) 요소마다 따로 관리합니다.
+function announce(element, text) {
+  clearTimeout(announceTimers.get(element));
+  element.textContent = '';
   if (!text) return;
-  statusTimer = setTimeout(() => { status.textContent = text; }, 40);
+  announceTimers.set(element, setTimeout(() => { element.textContent = text; }, 40));
+}
+
+export function setStatus(text) {
+  announce(status, text);
 }
 
 // 복호화 중에는 입력과 버튼을 잠급니다. busy=false는 제출 버튼을 처음 활성화하는 데도 씁니다.
@@ -93,6 +101,43 @@ export function renderVoucher(voucher) {
     document.getElementById(`voucher-${key}`).textContent = voucher[key];
   }
 }
+
+// 복호화한 편지를 채웁니다. 첫 항목은 호칭, 마지막 항목은 맺음말, 그 사이는 문단입니다. textContent만 씁니다. (ADR-026, ADR-060)
+export function renderLetter(letter) {
+  document.getElementById('letter-salutation').textContent = letter[0];
+  document.getElementById('letter-closing').textContent = letter[letter.length - 1];
+  const paragraphs = document.getElementById('letter-paragraphs');
+  paragraphs.replaceChildren(...letter.slice(1, -1).map((text) => {
+    const p = document.createElement('p');
+    p.textContent = text;
+    return p;
+  }));
+}
+
+// 편지 접기/펼치기: 접으면 호칭만 남고 문단과 맺음말이 숨겨집니다. (ADR-060)
+const letterToggle = document.getElementById('letter-toggle');
+const letterBody = document.getElementById('letter-body');
+letterToggle.addEventListener('click', () => {
+  const wasExpanded = letterToggle.getAttribute('aria-expanded') === 'true';
+  letterBody.hidden = wasExpanded;
+  letterToggle.setAttribute('aria-expanded', String(!wasExpanded));
+  letterToggle.textContent = wasExpanded ? '펼쳐보기' : '접어두기';
+});
+
+// 센터 안내: 주소는 화면의 주소 텍스트 한 곳에서만 읽습니다. 복사할 값과 지도 링크가 모두 여기서 나옵니다. (ADR-060)
+const addressElement = document.getElementById('center-address');
+const mapLink = document.getElementById('map-link');
+const copyStatus = document.getElementById('copy-status');
+mapLink.href = NAVER_MAP_SEARCH + encodeURIComponent(addressElement.textContent.trim());
+document.getElementById('copy-address').addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(addressElement.textContent.trim());
+    announce(copyStatus, COPY_MESSAGE.done);
+  } catch {
+    // 클립보드 API가 없거나 거부된 경우(일부 인앱 브라우저). 주소는 선택 가능한 텍스트로 항상 보입니다.
+    announce(copyStatus, COPY_MESSAGE.failed);
+  }
+});
 
 export function onGiftOpen(handler) {
   giftButton.addEventListener('click', handler);

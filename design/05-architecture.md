@@ -53,7 +53,7 @@ src/                    # 배포 폴더 (GitHub Actions로 배포, ADR-050)
   css/style.css          # 스타일
   js/normalize.js        # 정답 정규화 (순수 함수, 도구와 공유, ADR-039)
   js/crypto.js           # 키 파생과 복호화 (ADR-040)
-  js/screens.js          # 화면과 카드 전환, 바우처 표시 (ADR-041, ADR-047)
+  js/screens.js          # 화면과 카드 전환, 바우처·편지 표시, 편지 접기, 센터 주소 복사 (ADR-041, ADR-047, ADR-060)
   js/sound.js            # 효과음 합성: 뾱(버튼), 뿅(상자), 짜잔 (ADR-027, ADR-055, ADR-058)
   js/confetti.js         # 폭죽 (캔버스, ADR-055)
   js/app.js              # 시작점: 잠금 해제 흐름과 연결 (ADR-041)
@@ -82,6 +82,7 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 |--------|------|
 | `cdn.jsdelivr.net` | Pretendard 본문 글꼴 (버전 고정) |
 | `fonts.googleapis.com`, `fonts.gstatic.com` | 나눔손글씨 펜 편지 글꼴 (제공 확인 완료) |
+| `map.naver.com` | **이동 링크만** (센터 주소 검색). 리소스는 불러오지 않습니다. 새 탭, `rel="noopener noreferrer"` (ADR-012, ADR-060) |
 
 이 목록에 없는 호스트는 추가하기 전에 `06-decisions.md`에 먼저 기록합니다.
 
@@ -143,7 +144,7 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 - 상태 흐름: `intro → locked → decrypting → locked(틀림·네트워크 오류, 입력 유지) | error(데이터·버전)`, `decrypting → gift → opening → cards`. (ADR-053)
 - 잠금 해제 후에는 카드를 한 장씩 넘깁니다: 효과음과 상자 연출 → 바우처 → 편지 → 센터 안내 → 예약 문구. 카드는 "다음" 버튼으로만 넘어갑니다. (ADR-047, ADR-055)
 - 화면 전환 후 새 섹션 제목에 `tabindex="-1"`로 포커스를 옮깁니다. 대기·틀림 문구는 `role="status"`, 오류 화면은 `role="alert"`로 알립니다. (ADR-051)
-- 모듈 역할: `normalize.js`(순수 함수), `crypto.js`(키 파생, 복호화, 오류 구분), `screens.js`(화면과 카드 표시, 이동, 포커스, 바우처 채우기), `sound.js`(효과음 합성), `confetti.js`(폭죽), `app.js`(흐름 연결).
+- 모듈 역할: `normalize.js`(순수 함수), `crypto.js`(키 파생, 복호화, 오류 구분), `screens.js`(화면과 카드 표시, 이동, 포커스, 바우처·편지 채우기, 편지 접기, 센터 주소 복사와 지도 링크), `sound.js`(효과음 합성), `confetti.js`(폭죽), `app.js`(흐름 연결).
 
 ## 보조 규칙 (ADR-042, ADR-043)
 
@@ -169,8 +170,8 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 - `AudioContext`는 첫 버튼 탭(안내 화면의 시작 버튼)의 이벤트 안에서 만들고 재개합니다. 이후 소리(뿅, 짜잔)는 같은 컨텍스트를 이어 씁니다. 실패하면 조용히 넘어갑니다. (ADR-058)
 - 버튼 소리는 문서 전체의 클릭을 한 곳에서 받아 처리합니다(이벤트 위임). 비활성 버튼과 `data-own-sound`가 붙은 버튼(상자)은 제외합니다. 폼에서 Enter로 제출해도 브라우저가 제출 버튼의 클릭을 일으키므로 소리가 납니다.
 - 폭죽은 `confetti.js`가 전체 화면 캔버스(`aria-hidden`, 클릭 통과)에 그립니다. 상자 위치에서 위쪽으로 터지고, 약 1.8초 뒤 캔버스를 비우고 숨깁니다. 모션 감소 설정이면 그리지 않습니다.
-- 바우처는 복호화한 `voucher` 값을 `textContent`로 채웁니다. `innerHTML`은 쓰지 않습니다.
-- 카드는 `screens.js`가 관리합니다. 카드 목록의 순서는 코드의 배열 `CARD_IDS` 하나로 정합니다. (ADR-054)
+- 바우처와 편지는 복호화한 값을 `textContent`로 채웁니다. `innerHTML`은 쓰지 않습니다. 편지는 첫 항목을 호칭, 마지막 항목을 맺음말, 그 사이를 문단으로 나눠 넣고, 문단 안의 줄바꿈은 CSS로 보존합니다. (ADR-060)
+- 카드는 `screens.js`가 관리합니다. 카드 목록의 순서는 코드의 배열 `CARD_IDS` 하나로 정합니다. 현재 순서는 바우처 → 편지 → 센터 안내입니다. (ADR-054, ADR-060)
 - 모션 감소: `prefers-reduced-motion: reduce`이면 연출 대기 시간 없이 바로 `cards`로 갑니다.
 
 ## 카드 등장 연출과 로고 (ADR-056)
@@ -195,3 +196,10 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 
 - 잠금 화면의 `h1`(`id="lock-heading"`, `tabindex="-1"`)은 안내(`.lock-guide`)와 질문(`#lock-question`)을 함께 담습니다. 화면에 들어오면 포커스가 이 제목으로 가서 전체를 읽습니다.
 - 입력창의 `aria-labelledby`는 질문(`#lock-question`)만 가리킵니다. 안내 문구까지 입력창 이름에 들어가지 않게 하기 위해서입니다.
+
+## 편지와 센터 안내 구현 (ADR-060)
+
+- 편지 접기 버튼은 `aria-expanded`와 `aria-controls`를 갖고, 접으면 본문 영역에 `hidden`을 붙입니다.
+- 센터 정보는 공개 HTML에 정적으로 둡니다. 주소는 `<address>` 텍스트 한 곳이며, 복사할 값과 지도 링크의 검색어는 이 텍스트에서 읽습니다. 지도 링크의 주소(`href`)는 JS가 이 텍스트로 만듭니다.
+- 주소 복사는 `navigator.clipboard.writeText`만 씁니다. 실패하면(API가 없거나 거부됨) 실패 문구를 보여 줍니다. 복사 결과 문구는 `role="status"` 영역에 같은 방식으로 다시 읽히게 갱신합니다.
+- 지도 링크는 새 탭(`target="_blank"`)이며 `rel="noopener noreferrer"`를 붙입니다.

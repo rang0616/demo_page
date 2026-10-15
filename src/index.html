@@ -93,9 +93,36 @@
         <button type="button" class="button" data-next>다음</button>
       </article>
 
-      <!-- 임시 카드: v0.3에서 편지 카드가 생기면 삭제합니다. -->
-      <article id="card-temp" class="card" data-card tabindex="-1" hidden aria-labelledby="temp-title">
-        <h1 id="temp-title" class="question">다음 카드는 곧 준비돼.</h1>
+      <!-- 편지 카드 (ADR-060). 본문은 복호화한 값을 JS가 textContent로 채웁니다. -->
+      <article id="card-letter" class="card letter" data-card tabindex="-1" hidden aria-labelledby="letter-salutation">
+        <div class="letter-head">
+          <h1 id="letter-salutation" class="letter-salutation"></h1>
+          <button id="letter-toggle" type="button" class="toggle" aria-expanded="true" aria-controls="letter-body">접어두기</button>
+        </div>
+        <div id="letter-body" class="letter-body">
+          <div id="letter-paragraphs" class="letter-paragraphs"></div>
+          <p id="letter-closing" class="letter-closing"></p>
+        </div>
+        <button type="button" class="button" data-next>다음</button>
+      </article>
+
+      <!-- 센터 안내 카드 (ADR-060). 공개 정보라 HTML에 정적으로 둡니다. v0.4 전까지 마지막 카드라 "다음" 버튼이 없습니다.
+           주소는 #center-address 한 곳에서만 관리합니다. 복사할 값과 지도 링크의 검색어는 이 텍스트에서 읽습니다. -->
+      <article id="card-center" class="card center" data-card tabindex="-1" hidden aria-labelledby="center-name">
+        <h1 id="center-name" class="center-name">리스파이어랩 양재점</h1>
+        <p class="center-notice">100% 사전 예약제 1:1 프라이빗 케어 센터</p>
+        <address id="center-address" class="center-address">서울특별시 서초구 강남대로 224</address>
+        <p class="center-access">양재역 3·4번 출구 도보 3분</p>
+        <div class="center-actions">
+          <button id="copy-address" type="button" class="button button-sub">주소 복사하기</button>
+          <a id="map-link" class="button button-sub" target="_blank" rel="noopener noreferrer">네이버 지도로 보기</a>
+        </div>
+        <p id="copy-status" class="status" role="status" aria-live="polite"></p>
+        <ul class="center-benefits">
+          <li><strong>애쓰지 않고 누워서 받는 쉼</strong><span>혼자서 힘겹게 하는 운동이 아니에요. 편안하게 호흡만 하면 물리치료사 출신 전문 스트레처가 온몸을 릴랙스해 줍니다.</span></li>
+          <li><strong>악기 연주로 틀어진 자세 &amp; 손·발 통증 케어</strong><span>어렸을 때부터 틀어진 체형과 고질적인 통증, 일하느라 뭉쳤던 몸을 체계적인 1:1 분석을 통해 시원하게 풀어드립니다.</span></li>
+          <li><strong>프라이빗 1:1 맞춤 케어 20회</strong><span>오직 윰댕의 컨디션에 맞춰 100% 예약제로 진행되는 프라이빗한 힐링 리커버리 시간이에요.</span></li>
+        </ul>
       </article>
     </section>
   </main>
