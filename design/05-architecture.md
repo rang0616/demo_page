@@ -89,7 +89,7 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 ## 배포 (ADR-050)
 
 - Pages 소스는 "GitHub Actions"입니다. `.github/workflows/pages.yml`을 둡니다.
-- 트리거: `main` push와 수동 실행. 단계: 체크아웃 → Node 20 설정 → `node --test tests/*.test.mjs` → `src/`를 아티팩트로 업로드 → Pages 배포.
+- 트리거: `main` push와 수동 실행. 단계: 체크아웃 → Node 22 설정 → `node --test tests/*.test.mjs` → 암호문 파일(`src/data/letter.enc.json`) 존재 확인 → `src/`를 아티팩트로 업로드 → Pages 배포.
 - 권한: `contents: read`, `pages: write`, `id-token: write`. 동시 배포는 하나로 제한합니다.
 - 배포되는 것은 `src/`뿐입니다. `design/`, `tools/`, `tests/`, `package.json`은 올라가지 않습니다.
 - 사용 액션은 버전을 고정합니다.

@@ -152,6 +152,15 @@ test('외부 주소는 허용 목록 호스트뿐이다 (design/05 허용 외부
   }
 });
 
+test('JS가 찾는 id가 모두 HTML에 있다 (id가 어긋나면 모듈이 죽어 화면이 멈춤)', async () => {
+  const ids = new Set([...html.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]));
+  for (const file of await readdir(join(ROOT, 'src/js'))) {
+    for (const [, id] of (await read(`src/js/${file}`)).matchAll(/getElementById\('([^']+)'\)/g)) {
+      assert.ok(ids.has(id), `src/js/${file}: HTML에 없는 id ${id}`);
+    }
+  }
+});
+
 test('코드에 innerHTML, console, 저장소 접근, history 조작이 없다 (ADR-026, ADR-057)', async () => {
   for (const file of await readdir(join(ROOT, 'src/js'))) {
     const code = (await read(`src/js/${file}`)).replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');

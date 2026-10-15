@@ -3,7 +3,7 @@
 순서:
 
 1. 자동 검사를 먼저 실행합니다.
-   - `node --test tests/*.test.mjs` (정규화, 암호 왕복)
+   - `node --test tests/*.test.mjs` (정규화, 암호 왕복, 페이지 구조)
    - `src/data/letter.enc.json`이 있으면 `node tools/encrypt.mjs --self-test`는 사용자가 직접 실행하도록 안내합니다. (정답 입력이 필요하므로 대신 실행하지 않습니다)
 2. `python3 -m http.server -d src`를 백그라운드로 실행하고 `http://localhost:8000`을 엽니다. `file://`로 열면 암호문을 읽을 수 없습니다.
 3. 아래 체크리스트를 확인하고 결과를 보고합니다. 확인하지 못한 항목은 "미확인"으로 적습니다.
