@@ -18,7 +18,7 @@
 | [01-experience-flow.md](01-experience-flow.md) | 잠금 해제 → 공개 흐름, 화면 순서 | 초안 |
 | [02-content.md](02-content.md) | 편지(원문 그대로), 바우처, 센터 정보, 문구 | 초안 |
 | [03-booking.md](03-booking.md) | 예약은 문구로 안내 (날짜 선택 없음) | 초안 |
-| [04-design-system.md](04-design-system.md) | 아기자기한 톤의 색, 글꼴, 모양 기준 | 초안 (색은 협의 필요) |
+| [04-design-system.md](04-design-system.md) | 아기자기한 톤의 색, 글꼴, 모양 기준 | 초안 (색은 ADR-024에 따라 결과물을 보고 조정) |
 | [05-architecture.md](05-architecture.md) | 기술 구조, 비밀번호 잠금 구현, 배포 | 초안 |
 | [06-decisions.md](06-decisions.md) | 결정 기록(ADR) | 진행 중 |
 | [07-open-questions.md](07-open-questions.md) | 아직 정하지 않은 항목 | 진행 중 |
@@ -28,4 +28,5 @@
 1. **문서가 먼저, 코드가 나중입니다.** 변경은 해당 문서를 먼저 고친 뒤 구현합니다.
 2. **문서와 코드가 어긋나면 문서가 기준입니다.** 바꾸려면 `06-decisions.md`에 먼저 기록합니다.
 3. **모르는 것은 `07-open-questions.md`에 적습니다.** 추측으로 채우지 않습니다.
-4. 각 문서 상단에 상태(초안 / 확정 / 폐기)를 표시합니다.
+4. **기능과 기술의 결정은 ADR로 남깁니다.** 화면 문구나 수치 같은 세부 명세는 해당 문서 안에 적되, 그 명세가 바뀌면 이유를 ADR로 남깁니다.
+5. 각 문서 상단에 상태(초안 / 확정 / 폐기)를 표시합니다.

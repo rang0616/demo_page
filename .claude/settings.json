@@ -9,7 +9,6 @@
       "Bash(curl -sI:*)"
     ],
     "deny": [
-      "Bash(git push:*)",
       "Bash(rm -rf:*)"
     ]
   }

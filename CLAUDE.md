@@ -18,66 +18,66 @@
 ## 프로젝트 개요
 
 - **무엇인가**: 윰댕에게 퇴사·새 진로(대학원)·11/18 생일을 축하하며, 친구가 운영하는 리스파이어랩 양재점 20회 회원권을 서프라이즈로 전하는 비밀번호 잠금 모바일 웹 페이지. 요구사항과 설계의 기준은 `design/`입니다.
-- **데모**: 루트의 `index.html`은 초기 데모입니다. 설계 기준이 아니며, 편지 원문과 센터 정보를 옮겨 올 때만 참고합니다.
-- **배포**: GitHub Pages — https://rang0616.github.io/gift_insp_lab/ (`main` 브랜치 기준). 현재 저장소는 공개 상태입니다.
-- **스택**: 정적 HTML + CSS + Vanilla JS (`design/05-architecture.md` 기준). 본문은 비밀번호 답으로 암호화해 잠급니다.
+- **데모**: 루트의 `index.html`은 초기 데모입니다. 설계 기준이 아니며, 구현에 쓰지 않습니다. (처리 방법은 `design/07-open-questions.md` Q14)
+- **배포**: GitHub Pages — https://rang0616.github.io/demo_page/ . 배포 폴더는 `docs/`이며, Pages 소스는 `main` 브랜치의 `/docs`입니다. (ADR-022)
+- **스택**: 정적 HTML + CSS + Vanilla JS. 본문은 비밀번호 답으로 암호화해 잠급니다. (`design/05-architecture.md`)
 - **언어**: 화면 문구와 주석은 한국어, 코드 식별자는 영어.
 
 ## 구조
 
 ```
-design/           # 설계 문서 SoT (진입점: design/README.md, 데모 설계는 design/archive/v0-demo/)
-index.html        # 초기 데모 (설계 기준 아님)
-리스파이어랩.png   # 로고 (데모에서 참조 중)
-README.md         # 배포 URL 등 최소 정보
-CLAUDE.md         # 헌법과 작업 규칙 (이 파일)
-.claude/          # Claude Code 설정과 커맨드
+design/            # 설계 문서 SoT (진입점: design/README.md)
+  archive/v0-demo/ # 데모 설계 보관 (기준 아님)
+  private/         # 정답과 편지 원문 (Git 제외, 커밋 금지)
+docs/              # 배포 폴더 (GitHub Pages 소스)
+  index.html
+  css/style.css
+  js/app.js
+  data/letter.enc.json   # 암호화된 본문 (생성 결과물)
+tools/             # 암호문 생성 스크립트 (일회성, 배포 안 함)
+index.html         # 초기 데모 (구현 기준 아님, Q14 대기)
+README.md          # 배포 URL 등 최소 정보
+CLAUDE.md          # 헌법과 작업 규칙 (이 파일)
+.claude/           # Claude Code 설정과 커맨드
 ```
 
-새 구현 파일(예: 잠금 페이지, 암호문 데이터, 생성 스크립트)의 위치와 구성은 `design/05-architecture.md`를 따릅니다.
-
-`index.html` 내부 구획 (주석 기준):
-
-1. **SCENE 1 — 티저**: `#teaser-scene`, 선물 상자 `#giftBoxContainer` 클릭 → `openGift()`
-2. **SCENE 2 — 메인 공개**: `#main-content`
-   - 바우처 카드 `#voucherCard` / 편지 `#letterCard` (`toggleLetter()`)
-   - 패시브 스트레칭 소개 / 양재점 위치 (`copyAddress()`) / 예약 버튼
-3. **예약 모달**: `#calendarModal` — 미니 캘린더 렌더링, 시간대 선택, 메시지를 클립보드에 복사
-4. **JS 엔진**: Web Audio API 기반 BGM/효과음(`playNote`, `startRomanticBGM`), canvas-confetti 연출
+구현 파일의 세부 규칙은 `design/05-architecture.md`를 따릅니다.
 
 ## 작업 원칙
 
-- **단일 파일 구조를 유지합니다.** 별도 빌드 단계가 없으므로 CSS/JS를 외부 파일로 쪼개거나 번들러·프레임워크를 도입하기 전에 먼저 확인합니다.
-- **개인 콘텐츠는 임의로 바꾸지 않습니다.** 편지 본문, 바우처 정보(회원권 횟수, 센터명, 주소), 예약 문구(`sendScheduleToBoyfriend`의 메시지)는 사용자가 명시적으로 요청할 때만 수정합니다. 말투(반말 편지체)도 그대로 유지합니다.
-- **주소는 두 곳에 있습니다.** `#addressText`(HTML)와 `copyAddress()` 안의 `address` 상수(JS). 주소를 바꾸면 두 곳 모두, 지도 링크(`map.naver.com`, `map.kakao.com`)의 검색어도 함께 수정합니다.
-- **모바일 우선.** 레이아웃은 `.app-wrapper`의 `max-width: 440px` 기준입니다. 새 UI는 390px 폭에서 가로 스크롤이 생기지 않아야 합니다.
-- **외부 리소스는 최소화합니다.** 현재 허용된 외부 로드는 jsDelivr(Pretendard, canvas-confetti)와 Google Fonts(Cormorant Garamond)뿐입니다. 새 CDN을 추가할 때는 버전을 고정(`@x.y.z`)합니다.
-- **접근성·브라우저 호환:** 버튼은 `<button>`을 쓰고 아이콘 전용 버튼에는 `aria-label`/`title`을 답니다. `AudioContext`는 사용자 제스처 이후에만 생성·재개합니다(현재 `initAudio()` 방식 유지).
-- **스타일 변수는 `:root`의 CSS 변수(`--gold-*`, `--text-*`, `--rose-*`)를 사용합니다.** 색상 값을 하드코딩하지 않습니다. (기존 코드에 하드코딩이 일부 남아 있으니 새 코드에서만 지킵니다.)
+- **구현은 `docs/` 안에서 합니다.** CSS와 JS는 `docs/css/`, `docs/js/`로 분리합니다. (ADR-020, ADR-022)
+- **외부 리소스는 허용 목록만 씁니다.** `cdn.jsdelivr.net`, `fonts.googleapis.com`, `fonts.gstatic.com`입니다. 새 호스트는 `design/05-architecture.md`에 먼저 기록합니다. 버전은 고정(`@x.y.z`)합니다.
+- **개인 콘텐츠는 임의로 바꾸지 않습니다.** 편지 원문, 바우처 정보, 센터 문구는 `design/02-content.md`가 기준이며 사용자가 요청할 때만 수정합니다. 편지 원문은 한 글자도 바꾸지 않습니다. (ADR-007)
+- **정답과 편지 원문을 `docs/`나 커밋에 평문으로 넣지 않습니다.** 원문은 `design/private/`에만 있고, 암호문은 `design/05-architecture.md`의 재생성 절차로만 만듭니다.
+- **주소는 한 곳에서 관리합니다.** 센터 정보는 `design/02-content.md`에서 정하고, 구현에서는 상수 하나로 씁니다. 지도 링크는 네이버 지도만 씁니다. (ADR-012)
+- **모바일 우선.** 390px 폭에서 가로 스크롤이 생기지 않아야 합니다. 여백은 최소 16px입니다.
+- **색상은 CSS 변수(`:root`)로만 정의합니다.** 값은 `design/04-design-system.md`를 따르고, 확정 전에는 임의로 바꾸지 않습니다. (Q12)
+- **접근성:** 버튼은 `<button>`을 쓰고, 아이콘 전용 버튼에는 `aria-label`을 붙입니다. 확대 축소를 막지 않습니다.
+- **오디오:** 효과음은 사용자가 상자를 연 뒤에만 재생합니다. 자동 재생을 가정하지 않습니다.
 
 ## 검증 방법
 
 빌드·테스트 스위트가 없습니다. 변경 후 다음을 직접 확인합니다.
 
-1. `index.html`을 브라우저로 열어 콘솔 에러가 없는지 확인 (`open index.html`)
-2. 개발자 도구 모바일 뷰(예: 390×844)와 데스크톱 폭 모두에서 레이아웃 확인
-3. 상자 열기 → 메인 공개 → 편지 접기/펼치기 → 예약 모달 날짜/시간 선택 → 메시지 복사 흐름 확인
-4. 외부 링크와 CDN URL이 살아 있는지 확인 (`/check-links` 커맨드 사용)
+1. `docs/index.html`을 브라우저로 열어 콘솔 에러가 없는지 확인
+2. 개발자 도구 모바일 뷰(390×844)와 데스크톱 폭 모두에서 레이아웃 확인
+3. 잠금 화면: 틀린 답 → 격려 문구, 맞는 답 → 선물 열기 → 바우처 → 편지 → 센터 안내 → 예약 문구 순서 확인
+4. 소스 보기(view-source)에서 정답과 편지 원문이 평문으로 없는지 확인
+5. 외부 링크와 CDN URL이 허용 목록 안에 있고 응답하는지 확인 (`/check-links`)
+6. 카카오톡 인앱 브라우저에서 한 번 열어 확인 (배포 후)
+
+커맨드 `/preview-check`와 `/check-links`는 아직 데모 기준입니다. 구현 단계에서 `docs/` 기준으로 고칩니다.
 
 ## Git 규칙
 
-- 커밋 메시지는 한국어 또는 영어 한 줄 요약. 예: `Update letter copy`, `예약 모달 시간대 추가`
-- `main`에 직접 커밋하는 것은 사용자가 요청할 때만 합니다. 기능 변경은 브랜치로 나눠 작업하는 것을 기본으로 합니다.
-- 커밋·푸시는 사용자가 요청했을 때만 실행합니다. (GitHub Pages가 `main` 푸시로 바로 배포되므로 신중히 다룹니다.)
-- `.DS_Store`, `CLAUDE.local.md` 등 개인 파일은 커밋하지 않습니다 (`.gitignore` 참고).
-
-## 자주 쓰는 커맨드
-
-- `/preview-check` — 모바일/데스크톱 레이아웃과 인터랙션 흐름 점검 체크리스트 실행
-- `/check-links` — 페이지의 외부 링크와 CDN 주소 응답 확인
+- 커밋 메시지는 한국어 또는 영어 한 줄 요약으로 씁니다.
+- 커밋과 푸시는 사용자가 요청했을 때만 실행합니다. `main` 푸시는 GitHub Pages 배포로 이어지므로 신중히 다룹니다.
+- 커밋 전에 `git diff --cached`로 `design/private/`나 평문 편지, 정답이 없는지 확인합니다.
+- `.DS_Store`, `CLAUDE.local.md`, `.claude/settings.local.json`, `design/private/`는 커밋하지 않습니다 (`.gitignore`).
 
 ## 하지 말아야 할 것
 
-- 개인정보(실명, 연락처, 계정 정보)를 새로 추가하지 않습니다. 이 페이지는 공개 URL로 배포되어 있습니다.
-- 사용자 요청 없이 편지·바우처 텍스트, 날짜, 금액 관련 문구를 "다듬기" 위해 바꾸지 않습니다.
-- 빌드 산출물이나 `node_modules`, 대용량 이미지를 저장소에 추가하지 않습니다.
+- 개인정보(실명, 연락처, 계정 정보)를 새로 추가하지 않습니다. 이 페이지는 공개 URL로 배포됩니다.
+- 사용자 요청 없이 편지, 바우처, 날짜, 금액 관련 문구를 바꾸지 않습니다.
+- `design/`이나 도구 파일을 `docs/`에 넣어 배포하지 않습니다.
+- 자격 증명(토큰, 비밀번호)을 파일이나 명령에 넣지 않습니다.
