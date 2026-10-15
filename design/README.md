@@ -22,6 +22,8 @@
 | [05-architecture.md](05-architecture.md) | 기술 구조, 비밀번호 잠금 구현, 배포 | 초안 |
 | [06-decisions.md](06-decisions.md) | 결정 기록(ADR) | 진행 중 |
 | [07-open-questions.md](07-open-questions.md) | 아직 정하지 않은 항목 | 진행 중 |
+| [08-dev-flow.md](08-dev-flow.md) | 브랜치 전략, 작업 절차 (확정), 버전 로드맵 (초안) | 확정 / 초안 |
+| [CHANGELOG.md](CHANGELOG.md) | 설계 변경 이력 (기준선 v0.0 이후) | 진행 중 |
 
 ## 작성 규칙
 
