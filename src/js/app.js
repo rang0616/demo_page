@@ -1,13 +1,13 @@
 // 시작점: 안내 화면부터 잠금 해제, 선물 상자, 카드까지의 흐름을 연결합니다. (ADR-040, ADR-042, ADR-043, ADR-051, ADR-057)
 // 상태는 단일 변수 state에 둡니다: 'intro' | 'locked' | 'decrypting' | 'error' | 'gift' | 'opening' | 'cards'
 
-import { normalizeAnswer } from './normalize.js?v=1.7.0';
-import { UnlockError, decryptEnvelope } from './crypto.js?v=1.7.0';
-import { enableTapSound, playFanfare, playPop } from './sound.js?v=1.7.0';
+import { normalizeAnswer } from './normalize.js?v=1.8.0';
+import { UnlockError, decryptEnvelope } from './crypto.js?v=1.8.0';
+import { enableTapSound, playFanfare, playPop } from './sound.js?v=1.8.0';
 import {
   clearAnswer, focusInput, getAnswer, onGiftOpen, onStart, onSubmit, playOpening, renderLetter, renderVoucher, setBusy,
   setStatus, showError, showScreen, startCards,
-} from './screens.js?v=1.7.0';
+} from './screens.js?v=1.8.0';
 
 // 화면 문구 (design/01, ADR-033, ADR-043). 말투는 반말입니다. (ADR-029)
 const MESSAGE = {

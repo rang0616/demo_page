@@ -17,7 +17,7 @@
   --envelope-body: #F2BFBC;
   --envelope-flap-light: #EDB3B3;
   --envelope-flap: #E3A0A0;
-  --paper: #FFFDF8;
+  --paper: #FFFFFF;      /* 편지지와 봉투 속 종이. 배경과는 종이 그림자로 구분 (ADR-086) */
   --paper-line: rgba(196, 117, 125, 0.28);
   --seal: #B9546A;       /* 흰 글자 대비 4.65:1 */
   --seal-dark: #9A3C50;
@@ -381,16 +381,20 @@ a.button {
   flex-direction: column;
 }
 
-/* 편지가 열리면 프레임(흰 테두리와 그림자)을 없애고 편지지만 보입니다. 위쪽 여백은 이전 버튼 자리라 남깁니다. (ADR-081) */
-#card-letter[data-state="open"] .letter {
-  padding-right: 0;
-  padding-bottom: 0;
-  padding-left: 0;
+/* 편지 카드는 봉투 상태에서도 프레임(흰 배경과 그림자)이 없어 제목과 봉투가 화면 배경 위에 놓입니다. 열리면 좌우·아래 안쪽 여백도 없애
+   편지지만 보입니다. 위쪽 여백은 이전 버튼 자리라 남깁니다. (ADR-081, ADR-086) */
+#card-letter .letter {
   background: none;
   box-shadow: none;
 }
 
-/* 편지지 (ADR-070, 세로 여백선 없음 ADR-073): 아이보리 종이, 글줄에 맞춘 가로 줄. 줄 간격은 --letter-line 한 값이고
+#card-letter[data-state="open"] .letter {
+  padding-right: 0;
+  padding-bottom: 0;
+  padding-left: 0;
+}
+
+/* 편지지 (ADR-070, 세로 여백선 없음 ADR-073): 흰 종이(ADR-086), 글줄에 맞춘 가로 줄. 줄 간격은 --letter-line 한 값이고
    호칭·문단·맺음말의 line-height가 모두 같아 글이 줄 위에 앉습니다. */
 .letter-body {
   padding: calc(var(--letter-line) * 0.6) 16px calc(var(--letter-line) * 0.4);
@@ -569,6 +573,19 @@ a.button {
   border: 2px solid var(--accent-border);
   border-radius: 50%;
   cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease; /* "다음" 버튼과 같은 속도 (ADR-086) */
+}
+
+/* 마우스를 올리면 바탕이 "다음" 버튼과 같은 연한 분홍으로 바뀝니다. 누르는 동안은 모든 기기에서 같은 분홍색이 되며 살짝 작아집니다. */
+@media (hover: hover) {
+  .back-button:hover {
+    background: var(--accent-hover);
+  }
+}
+
+.back-button:active {
+  background: var(--accent-hover);
+  transform: scale(0.95);
 }
 
 .back-button svg {
