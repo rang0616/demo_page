@@ -46,6 +46,16 @@
   --gold-b: #E0B974;
   --muted-on-metal: #6B5C5C; /* 메탈 바탕(--metal-3 #F9DDD6) 위 흐린 글자 대비 4.9:1 */
   --voucher-accent: #B03A52;  /* "20회" 강조색. 가장 어두운 메탈 바탕 위 글자 대비 4.57:1 (ADR-085) */
+  --center-metal-1: #FFFFFF;  /* 센터 카드(하늘색 은빛 메탈, ADR-090). 가장 어두운 바탕(-3)에서 본문 글자 7.52:1 */
+  --center-metal-2: #EDF4FB;
+  --center-metal-3: #CFE0F2;
+  --center-edge-a: #BCD0E6;
+  --center-edge-b: #FAFDFF;
+  --center-edge-c: #9DB6D2;
+  --center-shade: rgba(110, 150, 190, 0.22);
+  --center-grain: rgba(255, 255, 255, 0.3);  /* 세로 결 */
+  --center-inset: inset 0 1px 0 rgba(255, 255, 255, 0.95), inset 0 -2px 6px var(--center-shade);
+  --muted-on-center: #5E5252;  /* 센터 카드 흐린 글자. --center-metal-3 위 5.56:1 */
   --shine: rgba(255, 255, 255, 0.65);
   --shine-warm: rgba(255, 245, 215, 0.35);
   --shadow-paper: 0 1px 4px rgba(120, 80, 80, 0.18);
@@ -106,10 +116,10 @@ body {
   display: none !important;
 }
 
+/* 카드 틀. 눈에 보이는 프레임(바탕과 그림자)은 바우처, 센터, 신원 확인의 질문·답란에만 있고
+   나머지는 화면 배경 위에 바로 놓입니다. (ADR-089) */
 .card {
-  background: var(--card);
   border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
   padding: 32px 24px;
   display: flex;
   flex-direction: column;
@@ -124,16 +134,20 @@ body {
   outline: none;
 }
 
+/* 신원 확인의 답란: 밑줄만 있는 손글씨 입력창. 알약 모양 버튼과 모양이 다릅니다. (ADR-089) */
 .field {
   width: 100%;
-  padding: 14px 20px;
+  padding: 6px 8px;
   font: inherit;
-  font-size: 1.125rem;
+  font-family: var(--font-letter);
+  font-size: 2.2rem;
+  letter-spacing: 0.06em;
   text-align: center;
   color: var(--text);
-  background: var(--bg);
-  border: 2px solid var(--accent-border);
-  border-radius: var(--radius-pill);
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid var(--accent-border);
+  border-radius: 0;
 }
 
 .field:focus-visible {
@@ -188,18 +202,30 @@ body {
   color: var(--text);
 }
 
-/* 잠금 화면 제목 (ADR-059): 안내 두 줄은 작게, 질문은 크고 굵게. */
-.lock-heading {
+/* 신원 확인 화면 (ADR-059, ADR-089): 안내(프레임 밖) → 질문과 답란만 담은 흰 프레임 → 프레임 밖 버튼. */
+.lock-stack {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  outline: none;
+  gap: 20px;
+  width: 100%;
 }
 
 .lock-guide {
   font-size: 1rem;
   font-weight: 600;
   line-height: 1.6;
+  text-align: center;
+}
+
+.lock-frame {
+  gap: 6px;
+  padding: 24px 20px 12px;
+  background: var(--card);
+  box-shadow: var(--shadow-card);
+}
+
+.lock-heading {
+  outline: none;
 }
 
 /* 첫 화면: 휴대폰 푸시 알림처럼 생긴 카드와 시작 버튼 (ADR-088) */
@@ -372,15 +398,13 @@ body {
 
 /* 선물 상자 (ADR-053). 모두 CSS로 그립니다. */
 .gift-card {
-  padding: 40px 24px;
-}
-
-.gift-card .question {
-  order: 2;
+  display: flex;
+  flex-direction: column;
+  padding: 40px 0;
 }
 
 .gift {
-  order: 1;
+  position: relative;
   align-self: center;
   width: 168px;
   height: 168px;
@@ -485,6 +509,56 @@ body {
 /* 떠오르는 움직임은 멈춰 둡니다. 없애면 상자가 툭 내려앉습니다. (ADR-054) */
 .gift.opening .gift-box {
   animation-play-state: paused;
+}
+
+/* 흔들림과 물결 (ADR-089): 프레임 없이 상자만 알림처럼 흔들리고 둘레로 둥근 파동이 퍼집니다.
+   파동은 흔들리는 래퍼와 별개의 동그라미라 기울지 않고, 기본 불투명도가 0이라 애니메이션이 꺼지면 남지 않습니다. */
+.gift-sway {
+  display: block;
+  transform-origin: 50% 90%;
+  animation: gift-bell 3s ease-in-out 0.3s infinite;
+}
+
+.gift-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 120px;
+  height: 120px;
+  margin: -60px 0 0 -60px;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+  animation: gift-wave 3s ease-out 0.3s infinite;
+}
+
+.gift-ring-2 {
+  animation-delay: 0.45s;
+}
+
+.gift-ring-3 {
+  animation-delay: 0.6s;
+}
+
+.gift.opening .gift-sway,
+.gift.opening .gift-ring {
+  animation: none;
+}
+
+@keyframes gift-bell {
+  0%, 30%, 100% { transform: rotate(0); }
+  4%  { transform: rotate(-9deg); }
+  9%  { transform: rotate(9deg); }
+  14% { transform: rotate(-8deg); }
+  19% { transform: rotate(6deg); }
+  24% { transform: rotate(-3deg); }
+}
+
+@keyframes gift-wave {
+  0%   { opacity: 0.75; transform: scale(0.7); }
+  40%  { opacity: 0; transform: scale(2.6); }
+  100% { opacity: 0; transform: scale(2.6); }
 }
 
 @keyframes gift-float {
@@ -818,8 +892,39 @@ a.button {
 }
 
 /* 센터 안내 카드 (ADR-060) */
+/* 하늘색 은빛 메탈 카드 (ADR-090). 바우처와 색, 세로 결, 9초 반사광이 다릅니다. */
 .center {
+  position: relative;
   gap: 12px;
+  overflow: hidden;
+  border: 1.5px solid transparent;
+  background:
+    repeating-linear-gradient(90deg, var(--center-grain) 0 1px, transparent 1px 5px) padding-box,
+    linear-gradient(150deg, var(--center-metal-1) 0%, var(--center-metal-2) 32%, var(--center-metal-3) 64%, var(--center-metal-2) 100%) padding-box,
+    linear-gradient(135deg, var(--center-edge-a), var(--center-edge-b) 50%, var(--center-edge-c)) border-box;
+  box-shadow: var(--shadow-card), var(--center-inset);
+}
+
+.center::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(135deg, transparent 32%, var(--shine) 50%, transparent 68%);
+  transform: rotate(-25deg);
+  pointer-events: none;
+  animation: center-shimmer 9s infinite linear;
+}
+
+.center > * {
+  position: relative;
+}
+
+@keyframes center-shimmer {
+  0%   { transform: translateY(-80%) rotate(-25deg); }
+  100% { transform: translateY(80%) rotate(-25deg); }
 }
 
 .center-name {
@@ -831,7 +936,7 @@ a.button {
 .center-notice,
 .center-access {
   font-size: 0.9375rem;
-  color: var(--muted);
+  color: var(--muted-on-center);
 }
 
 .center-address {
@@ -840,11 +945,21 @@ a.button {
   user-select: text; /* 복사가 안 될 때 길게 눌러 직접 복사할 수 있게 합니다. */
 }
 
+/* 지도 링크와 주소 복사를 한 줄에 나란히 둡니다. 좁은 폭(320px)에서는 버튼이 다음 줄로 내려가 쌓입니다. (ADR-090) */
 .center-actions {
   display: flex;
-  flex-direction: column;
+  flex-flow: row wrap;
   gap: 10px;
   margin: 6px 0 0;
+}
+
+.center-actions .button {
+  flex: 1 1 0;
+  min-width: max-content;
+  padding-right: 8px;
+  padding-left: 8px;
+  font-size: 1rem;
+  white-space: nowrap;
 }
 
 /* 네이버 지도 버튼 (ADR-068). 네이버 초록색 바탕, 어두운 글자, 앞쪽에 "N" 아이콘. */
@@ -880,8 +995,17 @@ a.button {
 
 /* 예약 안내 카드 (ADR-061) */
 .booking {
-  padding: 48px 24px;
+  padding: 48px 0;
   gap: 12px;
+}
+
+/* 달력만 흰 프레임 안에 둡니다. (ADR-089) */
+.calendar-frame {
+  margin-top: 8px;
+  padding: 16px 12px 4px;
+  background: var(--card);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
 }
 
 .booking-label {
@@ -902,7 +1026,7 @@ a.button {
   position: relative;
   display: flex;
   gap: 12px;
-  margin: 8px 0 0;
+  margin: 0;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   scrollbar-width: none; /* 밀어서 넘기며, 아래 점이 현재 달을 알려 줍니다. */
@@ -1157,7 +1281,8 @@ a.button {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .voucher::before {
+  .voucher::before,
+  .center::before {
     display: none; /* 멈춘 채 남는 반사광 띠를 없앱니다. (ADR-071) */
   }
 

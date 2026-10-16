@@ -149,12 +149,20 @@ test('두 기기를 위한 밝은 색 구성 알림과 글자 자동 확대 방�
   assert.match(block(':root'), /color-scheme: only light;/, ':root 안에 color-scheme: only light가 있어야 합니다.');
   assert.match(block('html'), /-webkit-text-size-adjust: 100%;/);
   assert.match(block('html'), /(?<!-webkit-)text-size-adjust: 100%;/);
-  assert.match(block('\\.field'), /font-size: 1\.125rem;/, '입력창 글자는 16px 이상이어야 iOS가 확대하지 않습니다. (ADR-083)');
+  assert.match(block('\\.field'), /font-size: 2\.2rem;/, '입력창 글자는 16px 이상이어야 iOS가 확대하지 않습니다. 답란은 손글씨 2.2rem입니다. (ADR-083, ADR-089)');
 });
 
-test('선물 상자 안내 문구는 ADR-074의 문구이다', () => {
-  assert.match(html, /<h1 id="gift-hint"[^>]*>상자를 눌러 선물을 확인하세요\.<\/h1>/);
-  assert.ok(content.includes('| 선물 상자 안내 (존댓말 예외, ADR-074) | 상자를 눌러 선물을 확인하세요. |'), '02 문구 표와 일치해야 합니다.');
+test('선물 상자 화면: 보이는 글 없이 화면 읽기용 제목만, 프레임 없이 흔들림과 둥근 물결 (ADR-089)', () => {
+  assert.match(html, /<h1 id="gift-hint" class="question sr-only" tabindex="-1">선물 확인하기<\/h1>/);
+  assert.ok(content.includes('| 선물 확인하기 |'), '02 문구 표와 일치해야 합니다.');
+  assert.ok(!html.includes('상자를 눌러 선물을 확인하세요'), '옛 안내 문구는 없어야 합니다.');
+  const gift = html.match(/<section id="screen-gift"[\s\S]*?<\/section>/)[0];
+  assert.ok(!/class="card/.test(gift), '선물 상자 화면에는 프레임(.card)이 없어야 합니다.');
+  assert.equal((gift.match(/class="gift-ring[^"]*" aria-hidden="true"/g) || []).length, 3, '파동은 세 겹이며 장식이어야 합니다.');
+  assert.match(gift, /<span class="gift-sway" aria-hidden="true">\s*<span class="gift-box">/, '상자는 흔들리는 래퍼 안에 있어야 합니다.');
+  assert.match(css, /\.gift-ring \{[^}]*border-radius: 50%;[^}]*opacity: 0;/, '파동은 원이고 기본 불투명도가 0이어야 합니다.');
+  assert.match(css, /\.gift\.opening \.gift-sway,\s*\.gift\.opening \.gift-ring \{[^}]*animation: none;/, '상자를 누르면 흔들림과 파동이 멈춰야 합니다.');
+  assert.match(css, /@keyframes gift-wave \{[\s\S]*?scale\(2\.6\)/, '파동은 최대 2.6배(약 312px)입니다.');
   assert.ok(content.includes('편지가 도착했습니다!'), '02 문구 표에 편지 봉투 제목이 있어야 합니다.');
 });
 
@@ -200,7 +208,16 @@ test('센터 카드: 이름 아래 로고, 소개 문구 없음, 초록 지도 �
   assert.ok(map, '지도 링크가 없습니다.');
   assert.ok(map[1].includes('button-naver') && map[1].includes('rel="noopener noreferrer"') && map[1].includes('target="_blank"'));
   assert.match(map[2], /^<svg class="naver-mark"[^>]*aria-hidden="true"/, 'N 아이콘은 글자 앞의 장식(aria-hidden)이어야 합니다.');
-  assert.equal(textOf(map[2]), '네이버 지도로 보기');
+  assert.equal(textOf(map[2]), '지도로 보기', '보이는 글은 "지도로 보기"입니다. (ADR-090)');
+  assert.match(map[1], /aria-label="네이버 지도로 보기"/, '접근성 이름은 보이는 글을 포함한 "네이버 지도로 보기"입니다. (WCAG 2.5.3)');
+  const actions = center.match(/<div class="center-actions">([\s\S]*?)<\/div>/)[1];
+  assert.ok(actions.indexOf('id="map-link"') < actions.indexOf('id="copy-address"'), '지도 링크가 왼쪽(앞), 주소 복사가 오른쪽입니다. (ADR-090)');
+  assert.match(css, /\.center-actions \{[^}]*flex-flow: row wrap;/, '두 버튼은 한 줄에 나란히 놓입니다(좁으면 쌓임). (ADR-090)');
+  assert.match(css, /\.center \{[^}]*var\(--center-metal-1\)[^}]*var\(--center-metal-3\)[^}]*var\(--center-edge-a\)/s, '센터 카드는 하늘색 은빛 메탈입니다. (ADR-090)');
+  assert.match(css, /--center-metal-3: #CFE0F2;/);
+  assert.match(css, /--muted-on-center: #5E5252;/);
+  assert.match(css, /\.center::before \{[^}]*animation: center-shimmer 9s/s, '센터 카드 반사광은 9초 주기입니다.');
+  assert.match(css, /prefers-reduced-motion[\s\S]*\.center::before \{\s*display: none;/, '모션 감소 설정에서는 반사광 띠가 남지 않아야 합니다.');
   assert.match(css, /--naver: #03C75A;/);
   assert.match(css, /\.button\.button-naver \{[^}]*background: var\(--naver\)/);
 });
@@ -481,4 +498,46 @@ test('암호문 파일의 구조가 맞다 (ADR-026, 내용은 풀지 않음)', 
   assert.equal(envelope.kdf.iter, 600000);
   assert.equal(envelope.cipher.name, 'AES-GCM');
   for (const field of [envelope.kdf.salt, envelope.cipher.iv, envelope.ct]) assert.equal(typeof field, 'string');
+});
+
+test('신원 확인 화면: 안내는 프레임 밖, 질문·답란만 흰 프레임, 버튼은 프레임 밖 (ADR-059, ADR-089)', () => {
+  const lock = html.match(/<form id="lock-form"[\s\S]*?<\/form>/)[0];
+  assert.match(lock, /<form id="lock-form" class="lock-stack"/);
+  const guideAt = lock.indexOf('id="lock-guide"'), frameAt = lock.indexOf('class="card lock-frame"'), submitAt = lock.indexOf('id="submit"');
+  assert.ok(guideAt >= 0 && guideAt < frameAt && frameAt < submitAt, '순서는 안내, 프레임, 버튼입니다.');
+  const frame = lock.match(/<div class="card lock-frame">([\s\S]*?)\n        <\/div>/)[1];
+  assert.ok(frame.includes('id="lock-question"') && frame.includes('id="answer"') && frame.includes('id="status"'), '프레임 안에는 질문, 답란, 상태 문구가 있습니다.');
+  assert.ok(!frame.includes('class="lock-guide"') && !frame.includes('id="submit"'), '안내 문구와 버튼은 프레임 밖입니다.');
+  assert.match(lock, /<h1 id="lock-heading"[^>]*aria-labelledby="lock-guide lock-question"/, '제목은 안내와 질문을 이어서 읽습니다.');
+  assert.match(lock, /<input id="answer"[^>]*aria-labelledby="lock-question"/, '입력창의 이름은 질문만 씁니다.');
+  assert.match(html, /<section id="screen-lock"[^>]*aria-labelledby="lock-guide lock-question"/);
+  assert.match(css, /\.lock-frame \{[^}]*background: var\(--card\);[^}]*box-shadow: var\(--shadow-card\)/s, '질문·답란 프레임은 흰 프레임입니다.');
+  const field = css.match(/\n\.field \{([^}]*)\}/)[1];
+  assert.match(field, /border: 0;/);
+  assert.match(field, /border-bottom: 2px solid var\(--accent-border\);/, '답란은 밑줄만 있습니다.');
+  assert.match(field, /font-family: var\(--font-letter\);/, '답란 글자는 손글씨입니다.');
+  assert.ok(!/border-radius: var\(--radius-pill\)/.test(field), '답란은 알약 모양이 아닙니다.');
+});
+
+test('프레임은 바우처, 센터, 신원 확인 질문·답란, 달력에만 있다 (ADR-089)', () => {
+  const card = css.match(/\n\.card \{([^}]*)\}/)[1];
+  assert.ok(!/background:|box-shadow:/.test(card), '.card 기본 틀에는 바탕과 그림자가 없어야 합니다.');
+  const booking = article('card-booking');
+  assert.match(booking, /<div class="calendar-frame">\s*<div id="calendar"/, '달력만 흰 프레임 안에 있습니다.');
+  assert.ok(booking.indexOf('class="booking-label"') < booking.indexOf('class="calendar-frame"') && booking.indexOf('id="booking-message"') < booking.indexOf('class="calendar-frame"'), '라벨과 본문은 달력 프레임 밖입니다.');
+  assert.match(css, /\.calendar-frame \{[^}]*background: var\(--card\);[^}]*box-shadow: var\(--shadow-card\)/s);
+});
+
+test('프레임이 없어야 하는 블록에는 바탕·그림자가 없고, 센터 버튼 줄과 신원 확인 수치는 설계대로이다 (ADR-089, ADR-090)', () => {
+  for (const sel of ['\\.booking', '\\.gift-card', '\\.lock-stack', '\\.lock-guide', '\\.center-actions']) {
+    const body = css.match(new RegExp('\\n' + sel + ' \\{([^}]*)\\}'))?.[1] ?? '';
+    assert.ok(!/background:|box-shadow:/.test(body), `${sel.replace(/\\/g, '')}에는 바탕과 그림자가 없어야 합니다.`);
+  }
+  assert.match(css, /\.lock-stack \{[^}]*gap: 20px;/s);
+  assert.match(css, /\.lock-frame \{[^}]*gap: 6px;[^}]*padding: 24px 20px 12px;/s);
+  assert.match(css, /\.center-actions \.button \{[^}]*flex: 1 1 0;[^}]*min-width: max-content;[^}]*padding-right: 8px;[^}]*padding-left: 8px;[^}]*white-space: nowrap;/s, '320px에서 버튼이 쌓이되 글자가 줄바꿈되지 않아야 합니다.');
+  for (const v of ['--center-metal-1: #FFFFFF', '--center-metal-2: #EDF4FB', '--center-edge-a: #BCD0E6', '--center-edge-b: #FAFDFF', '--center-edge-c: #9DB6D2', '--center-shade: rgba(110, 150, 190, 0.22)']) assert.ok(css.includes(v), `${v}`);
+  assert.match(css, /\.gift-sway \{[^}]*gift-bell 3s ease-in-out 0\.3s infinite/s);
+  assert.match(css, /\.gift-ring-2 \{[^}]*0\.45s/s);
+  assert.match(css, /\.gift-ring-3 \{[^}]*0\.6s/s);
 });

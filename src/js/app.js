@@ -1,13 +1,13 @@
 // 시작점: 안내 화면부터 잠금 해제, 선물 상자, 카드까지의 흐름을 연결합니다. (ADR-040, ADR-042, ADR-043, ADR-051, ADR-057)
 // 상태는 단일 변수 state에 둡니다: 'intro' | 'locked' | 'decrypting' | 'error' | 'gift' | 'opening' | 'cards'
 
-import { normalizeAnswer } from './normalize.js?v=1.9.0';
-import { UnlockError, decryptEnvelope } from './crypto.js?v=1.9.0';
-import { enableTapSound, playFanfare, playPop } from './sound.js?v=1.9.0';
+import { normalizeAnswer } from './normalize.js?v=1.10.0';
+import { UnlockError, decryptEnvelope } from './crypto.js?v=1.10.0';
+import { enableTapSound, playFanfare, playPop } from './sound.js?v=1.10.0';
 import {
   clearAnswer, focusInput, getAnswer, onGiftOpen, onStart, onSubmit, playOpening, renderLetter, renderVoucher, setBusy,
   setStatus, showError, showScreen, startCards,
-} from './screens.js?v=1.9.0';
+} from './screens.js?v=1.10.0';
 
 // 화면 문구 (design/01, ADR-033, ADR-043). 말투는 반말입니다. (ADR-029)
 const MESSAGE = {
@@ -132,7 +132,7 @@ async function handleGiftOpen() {
 function handleStart() {
   if (state !== 'intro') return;
   state = 'locked';
-  showScreen('lock'); // 잠금 화면 제목(#lock-heading, 안내와 질문 전체)으로 포커스가 옮겨집니다.
+  showScreen('lock'); // 잠금 화면 제목(#lock-heading, 질문만 담고 이름은 안내와 질문)으로 포커스가 옮겨집니다.
 }
 
 enableTapSound(); // 모든 버튼에 "뾱" 소리. 첫 버튼 탭에서 AudioContext가 만들어집니다. (ADR-058)

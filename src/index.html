@@ -22,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=1.9.0">
+  <link rel="stylesheet" href="css/style.css?v=1.10.0">
 
   <!-- JS가 꺼져 있으면 폼을 숨깁니다. 정답이 주소(URL)에 남지 않게 하기 위해서입니다. (ADR-051) -->
   <noscript><style>#app { display: none; }</style></noscript>
@@ -57,20 +57,20 @@
     </section>
 
     <!-- 잠금 화면 (안내 화면의 버튼을 누르면 나타납니다) -->
-    <section id="screen-lock" class="screen" aria-labelledby="lock-heading" hidden>
+    <section id="screen-lock" class="screen" aria-labelledby="lock-guide lock-question" hidden>
       <!-- 입력창에 name 속성을 두지 않습니다. 기본 제출이 일어나도 값이 전송되지 않습니다. (ADR-051) -->
-      <form id="lock-form" class="card" autocomplete="off" novalidate>
-        <!-- 제목은 안내 두 줄과 질문을 함께 담습니다. 입력창의 이름은 질문만 씁니다. (ADR-059) -->
-        <h1 id="lock-heading" class="lock-heading" tabindex="-1">
-          <span class="lock-guide">신원을 확인하겠습니다.<br>아래 질문에 답을 해주세요.</span>
-          <span id="lock-question" class="question">휘와 윰댕이 사귄 날은?</span>
-        </h1>
-        <input id="answer" type="text" class="field"
-               aria-labelledby="lock-question" aria-describedby="status"
-               autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+      <form id="lock-form" class="lock-stack" autocomplete="off" novalidate>
+        <!-- 안내는 프레임 밖, 질문과 답란만 흰 프레임 안입니다. 제목은 aria-labelledby로 안내와 질문을 이어서 읽습니다. 입력창의 이름은 질문만 씁니다. (ADR-059, ADR-089) -->
+        <p id="lock-guide" class="lock-guide">신원을 확인하겠습니다.<br>아래 질문에 답을 해주세요.</p>
+        <div class="card lock-frame">
+          <h1 id="lock-heading" class="lock-heading" tabindex="-1" aria-labelledby="lock-guide lock-question"><span id="lock-question" class="question">휘와 윰댕이 사귄 날은?</span></h1>
+          <input id="answer" type="text" class="field"
+                 aria-labelledby="lock-question" aria-describedby="status"
+                 autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+          <p id="status" class="status" role="status" aria-live="polite"></p>
+        </div>
         <!-- JS가 연결되기 전에는 비활성입니다. 연결되면 app.js가 활성화합니다. -->
         <button id="submit" type="submit" class="button" disabled>열어 보기</button>
-        <p id="status" class="status" role="status" aria-live="polite"></p>
       </form>
     </section>
 
@@ -83,13 +83,19 @@
 
     <!-- 선물 상자 화면 (ADR-053). 상자는 장식이므로 스크린리더에는 숨기고 버튼 이름으로 알립니다. -->
     <section id="screen-gift" class="screen" aria-labelledby="gift-hint" hidden>
-      <div class="card gift-card">
-        <h1 id="gift-hint" class="question" tabindex="-1">상자를 눌러 선물을 확인하세요.</h1>
+      <div class="gift-card">
+        <!-- 화면에 보이는 글은 없고 화면 읽기용 제목만 둡니다. 프레임도 없습니다. (ADR-089) -->
+        <h1 id="gift-hint" class="question sr-only" tabindex="-1">선물 확인하기</h1>
         <!-- data-own-sound: 상자는 "뿅" 소리와 폭죽이 따로 있으므로 버튼 공통 "뾱"을 내지 않습니다. (ADR-058) -->
         <button id="gift-button" type="button" class="gift" data-own-sound aria-label="선물 상자 열기">
-          <span class="gift-box" aria-hidden="true">
-            <span class="gift-lid"><span class="gift-bow"></span></span>
-            <span class="gift-body"></span>
+          <span class="gift-ring" aria-hidden="true"></span>
+          <span class="gift-ring gift-ring-2" aria-hidden="true"></span>
+          <span class="gift-ring gift-ring-3" aria-hidden="true"></span>
+          <span class="gift-sway" aria-hidden="true">
+            <span class="gift-box">
+              <span class="gift-lid"><span class="gift-bow"></span></span>
+              <span class="gift-body"></span>
+            </span>
           </span>
         </button>
       </div>
@@ -157,8 +163,8 @@
           <address id="center-address" class="center-address">서울특별시 서초구 강남대로 224</address>
           <p class="center-access">양재역 3·4번 출구 도보 3분</p>
           <div class="center-actions">
-            <!-- 네이버 초록색 버튼이 위, 주소 복사하기가 아래입니다. 앞의 "N" 아이콘은 장식입니다. (ADR-068) -->
-            <a id="map-link" class="button button-naver" target="_blank" rel="noopener noreferrer"><svg class="naver-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect class="naver-mark-bg" width="24" height="24" rx="5"/><path class="naver-mark-n" d="M7 6h3.4l3.6 5.7V6h3v12h-3.4L10 12.3V18H7z"/></svg>네이버 지도로 보기</a>
+            <!-- 한 줄에 지도 링크(왼쪽)와 주소 복사(오른쪽)입니다. 앞의 "N" 아이콘은 장식이고, 화면 읽기 이름은 "네이버 지도로 보기"입니다. (ADR-068, ADR-090) -->
+            <a id="map-link" class="button button-naver" aria-label="네이버 지도로 보기" target="_blank" rel="noopener noreferrer"><svg class="naver-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect class="naver-mark-bg" width="24" height="24" rx="5"/><path class="naver-mark-n" d="M7 6h3.4l3.6 5.7V6h3v12h-3.4L10 12.3V18H7z"/></svg>지도로 보기</a>
             <button id="copy-address" type="button" class="button button-sub">주소 복사하기</button>
           </div>
           <p id="copy-status" class="status" role="status" aria-live="polite"></p>
@@ -179,8 +185,10 @@
           <p class="booking-label">첫 예약 안내</p>
           <h1 id="booking-message" class="booking-message">첫 예약은 내가 해줄게!<br>가능한 날짜를 나에게 말해줘!&nbsp;<span aria-hidden="true">💌</span></h1>
           <!-- 10월·11월 달력 (ADR-069). 보기만 하는 달력이라 날짜 선택과 입력이 없습니다. JS가 채웁니다. 옆으로 밀거나 아래 점(월 이동 버튼)을 눌러 넘깁니다. (ADR-077) -->
+          <div class="calendar-frame">
           <div id="calendar" class="calendar" role="region" aria-label="10월과 11월 달력" tabindex="0"></div>
           <div class="calendar-dots" role="group" aria-label="달력 월 이동"><button type="button" class="calendar-dot is-current" aria-label="10월 달력 보기" aria-current="true"></button><button type="button" class="calendar-dot" aria-label="11월 달력 보기"></button></div>
+          </div>
         </div>
       </article>
     </section>
@@ -189,6 +197,6 @@
   <!-- 폭죽용 캔버스 (ADR-055). 장식이므로 스크린리더에는 숨기고, 눌러도 아래로 통과합니다. -->
   <canvas id="confetti" class="confetti" aria-hidden="true" hidden></canvas>
 
-  <script type="module" src="js/app.js?v=1.9.0"></script>
+  <script type="module" src="js/app.js?v=1.10.0"></script>
 </body>
 </html>
