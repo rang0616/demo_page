@@ -141,4 +141,4 @@
 - 이유: v1.0.0을 배포해 카카오톡으로 보내 본 휘님의 요청입니다. 미리보기에 센터 로고가 떠서 서프라이즈에 맞지 않았습니다.
 - ADR: 064, 065, 066, 067 (ADR-030의 og:image 부분, ADR-047의 뒤로 가기 부분, ADR-063, ADR-060·031의 접기 부분을 대체)
 - 영향 범위: 01, 02, 04, 05, 06, 08 문서, `/preview-check`, `/check-links`, README, CLAUDE.md(브랜치 문구, 사용자 승인), `.claude/settings.json`(쓸모없는 `open index.html` 허용 규칙 삭제, 사용자 승인), 일정, 코드(`index.html`, `style.css`, `screens.js`, `img/og.jpg`), 테스트
-- 커밋: 커밋 후 기록
+- 커밋: 92ae51d
