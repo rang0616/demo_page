@@ -1,18 +1,18 @@
 // 암호 왕복 테스트. 가짜 정답과 가짜 본문만 씁니다. 실제 정답과 원문은 쓰지 않습니다.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { encryptPayload, readLetterFromSecrets, validateVoucher, verifyEnvelope } from '../tools/encrypt.mjs';
+import { encryptPayload, readLetterFromSecrets, validateMarkers, validateVoucher, verifyEnvelope } from '../tools/encrypt.mjs';
 import {
   CIPHER, ENVELOPE_VERSION, IV_BYTES, KDF, SALT_BYTES, UnlockError, VOUCHER_KEYS,
   bytesToBase64, decryptEnvelope, deriveKey, getSubtle,
 } from '../src/js/crypto.js';
 
-const MMDD = '0305';
+const ANSWER = '가나 다라'; // 실제 정답과 무관한 값 (ADR-095)
 const voucher = Object.fromEntries(VOUCHER_KEYS.map((k) => [k, `값-${k}`]));
 const payload = { voucher, letter: ['호칭', '문단 하나', '문단 둘\n둘째 줄', '맺음말'] };
 
 // 키 파생이 느리므로 봉투는 한 번만 만듭니다.
-const envelope = await encryptPayload(payload, MMDD);
+const envelope = await encryptPayload(payload, ANSWER);
 
 async function kindOf(promise) {
   try {
@@ -25,7 +25,7 @@ async function kindOf(promise) {
 }
 
 test('올바른 정답이면 원문과 일치', async () => {
-  assert.deepEqual(await decryptEnvelope(envelope, MMDD), payload);
+  assert.deepEqual(await decryptEnvelope(envelope, ANSWER), payload);
 });
 
 test('틀린 정답은 wrong', async () => {
@@ -35,50 +35,50 @@ test('틀린 정답은 wrong', async () => {
 test('ct 한 바이트 변조는 wrong', async () => {
   const raw = Buffer.from(envelope.ct, 'base64');
   raw[0] ^= 0xff;
-  assert.equal(await kindOf(decryptEnvelope({ ...envelope, ct: raw.toString('base64') }, MMDD)), 'wrong');
+  assert.equal(await kindOf(decryptEnvelope({ ...envelope, ct: raw.toString('base64') }, ANSWER)), 'wrong');
 });
 
 test('verifyEnvelope 세 케이스 통과', async () => {
-  await verifyEnvelope(envelope, MMDD, payload);
+  await verifyEnvelope(envelope, ANSWER, payload);
 });
 
 test('v가 1이 아니면 version', async () => {
-  assert.equal(await kindOf(decryptEnvelope({ ...envelope, v: 2 }, MMDD)), 'version');
+  assert.equal(await kindOf(decryptEnvelope({ ...envelope, v: 2 }, ANSWER)), 'version');
 });
 
 test('kdf 반복 횟수가 다르면 data', async () => {
   const bad = { ...envelope, kdf: { ...envelope.kdf, iter: 1000 } };
-  assert.equal(await kindOf(decryptEnvelope(bad, MMDD)), 'data');
+  assert.equal(await kindOf(decryptEnvelope(bad, ANSWER)), 'data');
 });
 
 test('salt 길이가 다르면 data', async () => {
   const bad = { ...envelope, kdf: { ...envelope.kdf, salt: Buffer.alloc(8).toString('base64') } };
-  assert.equal(await kindOf(decryptEnvelope(bad, MMDD)), 'data');
+  assert.equal(await kindOf(decryptEnvelope(bad, ANSWER)), 'data');
 });
 
 test('iv 길이가 다르면 data', async () => {
   const bad = { ...envelope, cipher: { ...envelope.cipher, iv: Buffer.alloc(8).toString('base64') } };
-  assert.equal(await kindOf(decryptEnvelope(bad, MMDD)), 'data');
+  assert.equal(await kindOf(decryptEnvelope(bad, ANSWER)), 'data');
 });
 
 test('필드 누락은 data', async () => {
-  assert.equal(await kindOf(decryptEnvelope({ v: 1 }, MMDD)), 'data');
-  assert.equal(await kindOf(decryptEnvelope(null, MMDD)), 'data');
+  assert.equal(await kindOf(decryptEnvelope({ v: 1 }, ANSWER)), 'data');
+  assert.equal(await kindOf(decryptEnvelope(null, ANSWER)), 'data');
 });
 
 test('복호화는 되지만 평문 구조가 틀리면 data', async () => {
-  const noKey = await encryptPayload({ voucher: { ...voucher, title: undefined }, letter: payload.letter }, MMDD);
-  assert.equal(await kindOf(decryptEnvelope(noKey, MMDD)), 'data');
-  const shortLetter = await encryptPayload({ voucher, letter: ['하나뿐'] }, MMDD);
-  assert.equal(await kindOf(decryptEnvelope(shortLetter, MMDD)), 'data');
+  const noKey = await encryptPayload({ voucher: { ...voucher, title: undefined }, letter: payload.letter }, ANSWER);
+  assert.equal(await kindOf(decryptEnvelope(noKey, ANSWER)), 'data');
+  const shortLetter = await encryptPayload({ voucher, letter: ['하나뿐'] }, ANSWER);
+  assert.equal(await kindOf(decryptEnvelope(shortLetter, ANSWER)), 'data');
 });
 
 test('같은 입력도 암호화할 때마다 salt, iv, ct가 달라진다', async () => {
-  const other = await encryptPayload(payload, MMDD);
+  const other = await encryptPayload(payload, ANSWER);
   assert.notEqual(other.kdf.salt, envelope.kdf.salt);
   assert.notEqual(other.cipher.iv, envelope.cipher.iv);
   assert.notEqual(other.ct, envelope.ct);
-  assert.deepEqual(await decryptEnvelope(other, MMDD), payload);
+  assert.deepEqual(await decryptEnvelope(other, ANSWER), payload);
 });
 
 test('secrets.md 파싱: 코드 블록을 빈 줄 기준 문단으로 나눈다', () => {
@@ -119,32 +119,32 @@ async function envelopeFromBytes(bytes, mmdd) {
 }
 
 test('잘못된 base64는 data', async () => {
-  assert.equal(await kindOf(decryptEnvelope({ ...envelope, ct: '!!!' }, MMDD)), 'data');
+  assert.equal(await kindOf(decryptEnvelope({ ...envelope, ct: '!!!' }, ANSWER)), 'data');
 });
 
 test('ct가 16바이트 미만이면 data', async () => {
-  assert.equal(await kindOf(decryptEnvelope({ ...envelope, ct: Buffer.alloc(8).toString('base64') }, MMDD)), 'data');
+  assert.equal(await kindOf(decryptEnvelope({ ...envelope, ct: Buffer.alloc(8).toString('base64') }, ANSWER)), 'data');
 });
 
 test('cipher 이름이 다르면 data', async () => {
-  assert.equal(await kindOf(decryptEnvelope({ ...envelope, cipher: { ...envelope.cipher, name: 'AES-CBC' } }, MMDD)), 'data');
+  assert.equal(await kindOf(decryptEnvelope({ ...envelope, cipher: { ...envelope.cipher, name: 'AES-CBC' } }, ANSWER)), 'data');
 });
 
 test('v가 없거나 배열·문자열 봉투는 data (version 아님)', async () => {
   const { v, ...noV } = envelope;
-  assert.equal(await kindOf(decryptEnvelope(noV, MMDD)), 'data');
-  assert.equal(await kindOf(decryptEnvelope([], MMDD)), 'data');
-  assert.equal(await kindOf(decryptEnvelope('봉투', MMDD)), 'data');
+  assert.equal(await kindOf(decryptEnvelope(noV, ANSWER)), 'data');
+  assert.equal(await kindOf(decryptEnvelope([], ANSWER)), 'data');
+  assert.equal(await kindOf(decryptEnvelope('봉투', ANSWER)), 'data');
 });
 
 test('복호화는 되지만 평문이 JSON이 아니면 data', async () => {
-  const bad = await envelopeFromBytes(new TextEncoder().encode('이건 JSON이 아님'), MMDD);
-  assert.equal(await kindOf(decryptEnvelope(bad, MMDD)), 'data');
+  const bad = await envelopeFromBytes(new TextEncoder().encode('이건 JSON이 아님'), ANSWER);
+  assert.equal(await kindOf(decryptEnvelope(bad, ANSWER)), 'data');
 });
 
 test('letter에 문자열이 아닌 항목이 있으면 data', async () => {
-  const bad = await encryptPayload({ voucher, letter: ['호칭', 5, '맺음말'] }, MMDD);
-  assert.equal(await kindOf(decryptEnvelope(bad, MMDD)), 'data');
+  const bad = await encryptPayload({ voucher, letter: ['호칭', 5, '맺음말'] }, ANSWER);
+  assert.equal(await kindOf(decryptEnvelope(bad, ANSWER)), 'data');
 });
 
 test('secrets.md 파싱: 편지 원문 절에 코드 블록이 없으면 다음 절의 블록을 읽지 않는다', () => {
@@ -156,3 +156,16 @@ test('secrets.md 파싱: 문단 앞뒤 공백은 보존한다', () => {
   const md = '## 편지 원문\n```\n  들여쓴 호칭  \n\n본문\n\n맺음말\n```';
   assert.deepEqual(readLetterFromSecrets(md), ['  들여쓴 호칭  ', '본문', '맺음말']);
 });
+
+test('도구: 본문의 [[ ]] 짝이 맞지 않으면 번호만 알리고 실패한다. 내용은 담지 않는다 (ADR-098)', () => {
+  // 가짜 문장만 씁니다.
+  assert.doesNotThrow(() => validateMarkers(['호칭', '앞 [[강조]] 뒤', '둘째 [[a]] [[b]]', '맺음말']));
+  assert.throws(() => validateMarkers(['호칭', '정상', '[[열림만 이건 비밀문장', '맺음말']), (e) => /3번째 블록/.test(e.message) && !e.message.includes('비밀문장'));
+  assert.throws(() => validateMarkers(['호칭', '[[]]', '맺음말']), /2번째 블록/);
+  assert.throws(() => validateMarkers(['호칭 [[x]]', '본문', '맺음말']), /호칭/);
+  assert.throws(() => validateMarkers(['호칭', '본문', '맺음말 ]]']), /맺음말/);
+  const md = '## 편지 원문\n```\n호칭\n\n본문 [[강조]]\n\n맺음말\n```\n';
+  assert.deepEqual(readLetterFromSecrets(md), ['호칭', '본문 [[강조]]', '맺음말']);
+  assert.throws(() => readLetterFromSecrets('## 편지 원문\n```\n호칭\n\n본문 [[짝없음\n\n맺음말\n```\n'), /표시 짝/);
+});
+

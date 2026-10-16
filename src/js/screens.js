@@ -2,9 +2,9 @@
 // (ADR-047, ADR-053, ADR-054, ADR-055, ADR-057, ADR-060, ADR-065, ADR-066).
 // 안내, 잠금, 오류, 선물 상자, 카드를 한 화면 단위로 바꿉니다. 이전 카드로는 바우처까지만 돌아갑니다. (ADR-065)
 
-import { burstConfetti } from './confetti.js?v=1.11.0';
-import { VOUCHER_KEYS } from './crypto.js?v=1.11.0';
-import { splitAccent } from './accent.js?v=1.11.0';
+import { burstConfetti } from './confetti.js?v=1.12.0';
+import { VOUCHER_KEYS } from './crypto.js?v=1.12.0';
+import { splitAccent, splitMarked } from './accent.js?v=1.12.0';
 
 const SCREEN_IDS = {
   intro: 'screen-intro',
@@ -27,9 +27,6 @@ const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 // "오늘" 0시. 이보다 앞선 날짜가 "지난 날짜"입니다. 페이지를 연 시점의 기기 날짜 기준입니다. (ADR-072)
 const NOW = new Date();
 const TODAY_START = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate());
-// 임시: 암호문을 다시 만들기 전까지 맺음말(편지의 마지막 항목)을 이 서명으로 대신 보여 줍니다.
-// 암호문을 다시 만든 뒤에는 이 상수를 지웁니다. (ADR-076)
-const CLOSING_OVERRIDE = '남자친구 휘❤️';
 // 바우처 값 중 이 글자는 강조색으로 보여 줍니다. 값은 그대로 두고 화면에서만 나눕니다. (ADR-085)
 const VOUCHER_ACCENT = '20회';
 const CARD_GUARD_MS = 400; // 카드가 나타난 직후의 "다음" 탭은 무시합니다. (ADR-054) 등장 연출(0.7초)의 "밤!" 지점 뒤까지 막습니다.
@@ -126,23 +123,31 @@ export function renderVoucher(voucher) {
 // 복호화한 편지를 채웁니다. 첫 항목은 호칭, 마지막 항목은 맺음말, 그 사이는 문단입니다. textContent만 씁니다. (ADR-026, ADR-060)
 export function renderLetter(letter) {
   document.getElementById('letter-salutation').textContent = letter[0];
-  document.getElementById('letter-closing').textContent = CLOSING_OVERRIDE ?? letter[letter.length - 1];
+  document.getElementById('letter-closing').textContent = letter[letter.length - 1];
   const paragraphs = document.getElementById('letter-paragraphs');
   paragraphs.replaceChildren(...letter.slice(1, -1).map((text) => {
     const p = document.createElement('p');
-    p.textContent = text;
+    // 본문의 [[ ]] 강조 표시는 표시 문자를 숨기고 그 문구만 강조 요소로 보여 줍니다. 텍스트 노드와 textContent만 씁니다. (ADR-098)
+    p.replaceChildren(...splitMarked(text).map((piece) => {
+      if (!piece.accent) return document.createTextNode(piece.text);
+      const span = document.createElement('span');
+      span.className = 'letter-accent';
+      span.textContent = piece.text;
+      return span;
+    }));
     return p;
   }));
 }
 
 // 편지 봉투: 봉인 버튼을 누르면 덮개가 열리고 종이가 올라온 뒤, 봉투를 숨기고 편지와 "다음" 버튼을 보여 줍니다.
-// 모션 감소 설정이면 연출 없이 바로 보여 줍니다. 한 번 연 편지는 다시 닫지 않습니다. (ADR-066)
+// 모션 감소 설정이면 연출 없이 바로 보여 줍니다. 열린 편지의 "접기" 버튼을 누르면 봉투 상태로 돌아갑니다. (ADR-066, ADR-097)
 const letterCard = document.getElementById('card-letter');
 const envelope = document.getElementById('envelope');
 const sealButton = document.getElementById('seal-button');
 const letterBody = document.getElementById('letter-body');
 const letterHeading = document.getElementById('letter-heading');
 const letterActions = letterCard.querySelector('.card-actions'); // "다음" 버튼 구역. 편지가 열려야 보입니다.
+const foldButton = document.getElementById('fold-button'); // 열린 편지에서만 보이는 "접기" 버튼 (ADR-097)
 
 function prefersReducedMotion() {
   return Boolean(globalThis.matchMedia && globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -152,13 +157,33 @@ function finishEnvelope() {
   envelope.hidden = true;
   letterBody.hidden = false;
   letterActions.hidden = false;
+  foldButton.hidden = false;
   letterCard.dataset.state = 'open';
   letterHeading.className = 'sr-only'; // 열린 뒤에는 보이지 않는 제목으로 남아 카드의 이름만 맡습니다. (ADR-074)
   if (!letterCard.hidden) letterBody.focus(); // 여는 도중 다른 카드로 갔다면 포커스를 옮기지 않습니다.
 }
 
+// 접기: 편지를 숨기고 처음의 봉투 상태로 돌아갑니다. 제목과 봉투가 다시 보이고 깜빡임·흔들림이 처음부터 다시 시작합니다. (ADR-097)
+foldButton.addEventListener('click', () => {
+  if (letterCard.dataset.state !== 'open') return;
+  letterBody.hidden = true;
+  letterActions.hidden = true;
+  foldButton.hidden = true;
+  envelope.hidden = false;
+  letterHeading.className = 'letter-heading';
+  letterCard.dataset.state = 'sealed';
+  letterCard.dataset.refold = 'true'; // 내용 프레임이 부드럽게 나타납니다(모션 감소 설정에서는 CSS가 막음).
+  sealButton.focus();
+});
+
+// 페이드가 끝나면 표시를 지워, 다른 카드에 갔다 와서 카드 등장 연출이 다시 돌 때 겹치지 않게 합니다. (ADR-097)
+letterCard.querySelector('.letter').addEventListener('animationend', (event) => {
+  if (event.target === event.currentTarget && event.animationName === 'letter-reveal') delete letterCard.dataset.refold;
+});
+
 sealButton.addEventListener('click', () => {
   if (letterCard.dataset.state !== 'sealed') return;
+  delete letterCard.dataset.refold;
   if (prefersReducedMotion()) {
     finishEnvelope();
     return;

@@ -114,9 +114,9 @@ test('예약 안내 카드: 링크와 입력창이 없고, 내용 프레임 안�
   assert.ok(!booking.includes('data-next'), '마지막 카드에는 다음 버튼 구역이 없습니다.');
 });
 
-test('맺음말은 암호문을 다시 만들기 전까지 서명으로 대신 보인다 (ADR-076)', () => {
-  assert.match(screens, /const CLOSING_OVERRIDE = '남자친구 휘❤️';/);
-  assert.match(screens, /textContent = CLOSING_OVERRIDE \?\? letter\[letter\.length - 1\]/);
+test('맺음말은 암호문의 마지막 항목이고 임시 대체 상수는 없다 (ADR-076 임시 처리 해제)', () => {
+  assert.ok(!screens.includes('CLOSING_OVERRIDE'), '임시 상수는 지웠습니다.');
+  assert.match(screens, /getElementById\('letter-closing'\)\.textContent = letter\[letter\.length - 1\];/);
 });
 
 test('바우처의 "20회"는 강조 요소로 나뉘어 채워진다. 값은 바꾸지 않는다 (ADR-085)', async () => {
@@ -256,7 +256,7 @@ test('편지지에 세로 여백선이 없다 (ADR-073)', () => {
 });
 
 test('편지지와 메탈 바우처의 핵심 스타일이 있다 (ADR-070, ADR-071)', () => {
-  assert.match(css, /--letter-line: 2\.5rem;/);
+  assert.match(css, /--letter-line: 2\.25rem;/, '편지지 줄 간격은 2.25rem(36px)입니다. (ADR-096)');
   assert.match(css, /\.letter-salutation \{[^}]*line-height: var\(--letter-line\)/, '호칭의 line-height는 --letter-line이어야 합니다.');
   assert.match(css, /\.letter-paragraphs p,\s*\.letter-closing \{[^}]*line-height: var\(--letter-line\)/, '문단과 맺음말의 line-height는 --letter-line이어야 합니다.');
   assert.match(css, /\.letter-body \{[\s\S]*?var\(--paper-line\)[\s\S]*?var\(--paper\)/);
@@ -515,7 +515,7 @@ test('신원 확인 화면: 안내는 프레임 밖, 질문·답란만 흰 프�
   const field = css.match(/\n\.field \{([^}]*)\}/)[1];
   assert.match(field, /border: 0;/);
   assert.match(field, /border-bottom: 2px solid var\(--accent-border\);/, '답란은 밑줄만 있습니다.');
-  assert.match(field, /font-family: var\(--font-letter\);/, '답란 글자는 손글씨입니다.');
+  assert.match(field, /font-family: var\(--font-answer\);/, '답란 글자는 나눔손글씨 펜(--font-answer)입니다. (ADR-093)');
   assert.ok(!/border-radius: var\(--radius-pill\)/.test(field), '답란은 알약 모양이 아닙니다.');
 });
 
@@ -560,3 +560,84 @@ test('꽃가루는 약 200개이다 (ADR-092)', async () => {
   assert.match(confetti, /Array\.from\(\{ length: COUNT \}/, '꽃가루 수는 COUNT로 만들어야 합니다.');
   assert.match(confetti, /const DURATION_MS = 1800;/, '지속 시간은 그대로 1.8초입니다.');
 });
+
+test('편지는 감자꽃, 답란은 나눔손글씨 펜이고 한 번의 요청으로 불러온다 (ADR-093)', () => {
+  assert.match(css, /--font-letter: 'Gamja Flower', var\(--font-body\);/);
+  assert.match(css, /--font-answer: 'Nanum Pen Script', var\(--font-body\);/);
+  assert.match(css, /\.letter \{[^}]*font-family: var\(--font-letter\);/s);
+  assert.match(css, /\.letter-salutation \{[^}]*font-size: 1\.875rem;/s, '호칭은 1.875rem입니다.');
+  assert.match(css, /\.letter-paragraphs p \{[^}]*font-size: 1\.375rem;/s, '본문은 1.375rem입니다. (ADR-094)');
+  assert.match(css, /\.letter-closing \{[^}]*font-size: 1\.5rem;/s, '맺음말은 1.5rem입니다.');
+  assert.match(css, /\.letter-paragraphs p \{[^}]*text-indent: 0\.6em;/s, '본문 첫 줄 들여쓰기는 0.6em입니다. (ADR-096)');
+  assert.match(css, /\.letter-paragraphs p \+ p \{[^}]*margin-top: var\(--letter-line\);/s, '문단 사이는 한 줄(=줄 간격)을 비웁니다. (ADR-096)');
+  const shared = css.match(/\.letter-paragraphs p,\s*\.letter-closing \{([^}]*)\}/)?.[1] ?? '';
+  assert.match(shared, /white-space: pre-line;/, '문단 안의 줄바꿈을 보여 줍니다. (ADR-060)');
+  assert.ok(!/font-size/.test(shared), '공통 규칙에는 글자 크기가 없어야 합니다(본문과 맺음말이 따로 정함). (ADR-094)');
+  assert.match(html, /family=Nanum\+Pen\+Script&family=Gamja\+Flower&display=swap/, '글꼴은 한 번의 요청으로 함께 불러옵니다.');
+  assert.equal((html.match(/fonts\.googleapis\.com\/css2/g) || []).length, 1);
+  assert.equal((css.match(/var\(--font-letter\)/g) || []).length, 1, '--font-letter는 편지(.letter) 한 곳에서만 씁니다.');
+  assert.equal((css.match(/var\(--font-answer\)/g) || []).length, 1, '--font-answer는 답란(.field) 한 곳에서만 씁니다.');
+});
+
+test('편지지 줄 격자: 줄 그림과 문단 간격이 모두 --letter-line 한 값이다 (ADR-096)', () => {
+  const body = css.match(/\.letter-body \{([^}]*)\}/)?.[1] ?? '';
+  assert.match(body, /calc\(var\(--letter-line\) \* 0\.6 - 0\.4rem\) \/ 100% var\(--letter-line\) repeat-y/, '줄 그림의 위치와 높이는 --letter-line입니다.');
+  const paragraphsBox = css.match(/\.letter-paragraphs \{([^}]*)\}/)?.[1] ?? '';
+  assert.ok(!/gap:/.test(paragraphsBox), '문단 상자에 gap이 있으면 줄 격자가 깨집니다.');
+  for (const [, selector, bodyText] of css.matchAll(/([^{}]*\.letter-(?:paragraphs|closing|salutation)[^{}]*)\{([^}]*)\}/g)) {
+    assert.ok(!/margin-bottom:|padding-bottom:/.test(bodyText), `${selector.trim()}에 아래쪽 여백이 있으면 줄 격자가 깨집니다.`);
+  }
+  assert.equal((css.match(/margin-top: var\(--letter-line\)/g) || []).length, 1, '문단 사이 한 줄 비움은 한 곳에서만 정합니다.');
+});
+
+test('편지 접기 버튼: 열린 편지에서만 보이고 봉투 상태로 돌아간다 (ADR-097)', () => {
+  const letter = article('card-letter');
+  assert.match(letter, /<button id="fold-button" type="button" class="fold-button" aria-label="접기, 편지를 봉투로 돌리기" aria-controls="envelope letter-body" hidden>\s*<svg[^>]*aria-hidden="true"[^>]*>[\s\S]*?<\/svg>접기\s*<\/button>/, '접기 버튼은 hidden으로 시작하고 보이는 글 "접기"로 시작하는 이름을 가집니다.');
+  const backAt = letter.indexOf('data-back'), foldAt = letter.indexOf('id="fold-button"'), frameAt = letter.indexOf('class="card letter"');
+  assert.ok(backAt >= 0 && backAt < foldAt && foldAt < frameAt, '순서는 이전 버튼, 접기 버튼, 내용 프레임입니다.');
+  for (const id of cardIds.filter((c) => c !== 'card-letter')) assert.ok(!article(id).includes('fold-button'), `${id}에는 접기 버튼이 없습니다.`);
+  assert.match(screens, /foldButton\.hidden = false;/, '편지가 열리면 접기 버튼이 보입니다.');
+  const fold = screens.match(/foldButton\.addEventListener\('click', \(\) => \{([\s\S]*?)\n\}\);/)?.[1] ?? '';
+  for (const part of ['letterBody.hidden = true;', 'letterActions.hidden = true;', 'foldButton.hidden = true;', 'envelope.hidden = false;', "letterHeading.className = 'letter-heading';", "letterCard.dataset.state = 'sealed';", "letterCard.dataset.refold = 'true';", 'sealButton.focus();']) assert.ok(fold.includes(part), `접기 동작에 ${part}가 있어야 합니다.`);
+  assert.match(screens, /delete letterCard\.dataset\.refold;/, '열기를 누르면 페이드 표시를 지웁니다.');
+  assert.match(screens, /addEventListener\('animationend'[\s\S]*?delete letterCard\.dataset\.refold/, '페이드가 끝나면 표시를 지웁니다.');
+  assert.match(css, /\.fold-button \{[^}]*top: 12px;[^}]*right: 12px;[^}]*height: 44px;[^}]*border: 2px solid var\(--accent-border\);[^}]*border-radius: var\(--radius-pill\);/s);
+  assert.match(css, /\.fold-button:active \{[^}]*background: var\(--accent-hover\);[^}]*transform: scale\(0\.95\);/s);
+  assert.match(css, /#card-letter\[data-refold\] \.letter \{[^}]*animation: letter-reveal 0\.35s ease-out backwards;/s, '접은 뒤 내용 프레임이 부드럽게 나타납니다(부모에 걸어 깜빡임·흔들림과 겹치지 않음).');
+  assert.ok(content.includes('| 편지 접기 버튼'), '02 문구 표에 접기 버튼이 있어야 합니다.');
+});
+
+test('편지 강조 표시 [[ ]]: 표시 문자를 숨기고 문구만 나눈다. 짝이 안 맞으면 글자 그대로 (ADR-098)', async () => {
+  const { splitMarked, markersBalanced } = await import(join(ROOT, 'src/js/accent.js'));
+  const plain = (pieces) => pieces.map((p) => p.text).join('');
+  // 아래 문장은 모두 실제 편지와 무관한 가짜 문장입니다.
+  assert.deepEqual(splitMarked('앞 [[강조]] 뒤'), [{ text: '앞 ', accent: false }, { text: '강조', accent: true }, { text: ' 뒤', accent: false }]);
+  assert.deepEqual(splitMarked('[[처음]]과 [[끝]]'), [{ text: '처음', accent: true }, { text: '과 ', accent: false }, { text: '끝', accent: true }]);
+  assert.deepEqual(splitMarked('표시 없음'), [{ text: '표시 없음', accent: false }]);
+  assert.equal(plain(splitMarked('줄\n[[걸친\n강조]] 끝❤️')), '줄\n걸친\n강조 끝❤️', '줄바꿈과 이모지는 그대로이고 표시 문자만 빠집니다.');
+  assert.ok(splitMarked('줄\n[[걸친\n강조]]').some((p) => p.accent && p.text === '걸친\n강조'), '줄바꿈이 걸쳐도 강조됩니다.');
+  assert.deepEqual(splitMarked(''), [{ text: '', accent: false }]);
+  for (const bad of ['[[열림만', '닫힘만]]', ']]거꾸로[[', '[[a[[b]]c]]', '[[[세 겹]]]', '[[]]', '[[a]] 뒤]]', '[[ ]]', '[[\n]]']) {
+    assert.equal(markersBalanced(bad), false, `짝 불일치: ${bad}`);
+    assert.deepEqual(splitMarked(bad), [{ text: bad, accent: false }], `짝이 안 맞으면 원문 그대로: ${bad}`);
+  }
+  for (const good of ['[[a]]', 'x [[a]] y [[b]] z', '[ 한 개 ] 괄호는 그냥 글자', '']) assert.equal(markersBalanced(good), true, good);
+  assert.match(screens, /splitMarked\(text\)\.map\(\(piece\) => \{/, '본문 문단은 splitMarked로 채웁니다.');
+  assert.ok(!/innerHTML|insertAdjacentHTML/.test(screens), 'HTML로 해석하지 않습니다.');
+  assert.match(css, /--letter-accent: #D92D5A;/);
+  assert.match(css, /\.letter-accent \{[^}]*color: var\(--letter-accent\);/s);
+  const accent = css.match(/\.letter-accent \{([^}]*)\}/)[1];
+  assert.ok(!/font-weight|font-size|line-height|padding|margin/.test(accent), '강조는 색만 바꿔 줄 격자를 깨지 않습니다.');
+});
+
+test('강조 표시: 짝이 맞는 입력은 이어 붙이면 표시 문자를 뺀 원문과 같다 (ADR-098)', async () => {
+  const { splitMarked, markersBalanced } = await import(join(ROOT, 'src/js/accent.js'));
+  // 가짜 문장만 씁니다.
+  for (const text of ['[[a]]', '앞[[a]]뒤', '[[a]][[b]]', '[[a[]]', '[[줄\r\n바꿈]] 끝', '글자 [ 하나 ] 괄호', '[[a]]]', '', '[[한글]]❤️']) {
+    if (!markersBalanced(text)) continue;
+    const joined = splitMarked(text).map((p) => p.text).join('');
+    assert.equal(joined, text.replace(/\[\[|\]\]/g, ''), `이어 붙이면 표시 문자만 빠져야 합니다: ${JSON.stringify(text)}`);
+  }
+  assert.equal(markersBalanced('[[a]]]'), false, '닫는 괄호가 세 개 이어지면 짝 불일치입니다.');
+});
+

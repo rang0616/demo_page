@@ -12,6 +12,7 @@ import { readFile, writeFile, rename, mkdir, rm } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { normalizeAnswer } from '../src/js/normalize.js';
+import { markersBalanced } from '../src/js/accent.js';
 import {
   CIPHER, ENVELOPE_VERSION, IV_BYTES, KDF, SALT_BYTES, VOUCHER_KEYS, UnlockError,
   bytesToBase64, decryptEnvelope, deriveKey, getSubtle,
@@ -41,7 +42,19 @@ export function readLetterFromSecrets(markdown) {
   // 문단 앞뒤의 공백은 보존하고, 앞뒤의 빈 줄만 제거합니다. (ADR-007, ADR-051)
   const blocks = body.split(/\n\s*\n/).map((b) => b.replace(/^\n+|\n+$/g, '')).filter((b) => b.trim().length > 0);
   if (blocks.length < 2) throw new Error('편지 문단이 2개 미만입니다.');
+  validateMarkers(blocks);
   return blocks;
+}
+
+// 강조 표시 `[[ ]]`의 짝을 검사합니다. 실패 메시지에는 번호만 담고 내용은 담지 않습니다. (ADR-098)
+export function validateMarkers(blocks) {
+  const last = blocks.length - 1;
+  for (const index of [0, last]) {
+    if (/\[\[|\]\]/.test(blocks[index])) throw new Error(`${index === 0 ? '호칭' : '맺음말'}에 [[ ]] 표시 문자가 있습니다. 본문 문단에만 쓸 수 있습니다.`);
+  }
+  for (let i = 1; i < last; i += 1) {
+    if (!markersBalanced(blocks[i])) throw new Error(`${i + 1}번째 블록(본문 ${i}번째 문단)의 [[ ]] 표시 짝이 맞지 않습니다.`);
+  }
 }
 
 export function validateVoucher(voucher) {
@@ -54,11 +67,11 @@ export function validateVoucher(voucher) {
 }
 
 // 평문 객체를 봉투(JSON)로 암호화합니다. (ADR-026)
-export async function encryptPayload(payload, mmdd) {
+export async function encryptPayload(payload, answer) {
   const subtle = getSubtle();
   const salt = globalThis.crypto.getRandomValues(new Uint8Array(SALT_BYTES));
   const iv = globalThis.crypto.getRandomValues(new Uint8Array(IV_BYTES));
-  const key = await deriveKey(mmdd, salt);
+  const key = await deriveKey(answer, salt);
   const plain = new TextEncoder().encode(JSON.stringify(payload));
   const ct = new Uint8Array(await subtle.encrypt({ name: CIPHER.name, iv }, key, plain));
   return {
@@ -73,13 +86,13 @@ export async function encryptPayload(payload, mmdd) {
 //   1. 올바른 정답 → 원문과 일치
 //   2. 틀린 정답 → 복호화 실패
 //   3. ct 한 바이트 변조 → 복호화 실패
-export async function verifyEnvelope(envelope, mmdd, expected) {
-  const decrypted = await decryptEnvelope(envelope, mmdd);
+export async function verifyEnvelope(envelope, answer, expected) {
+  const decrypted = await decryptEnvelope(envelope, answer);
   if (JSON.stringify(decrypted) !== JSON.stringify(expected)) {
     throw new Error('1번 실패: 복호화 결과가 원문과 다릅니다.');
   }
 
-  const wrongAnswer = mmdd === '0101' ? '0102' : '0101';
+  const wrongAnswer = answer + '!';
   try {
     await decryptEnvelope(envelope, wrongAnswer);
     throw new Error('2번 실패: 틀린 정답으로 복호화가 성공했습니다.');
@@ -91,7 +104,7 @@ export async function verifyEnvelope(envelope, mmdd, expected) {
   raw[0] ^= 0xff;
   const tampered = { ...envelope, ct: Buffer.from(raw).toString('base64') };
   try {
-    await decryptEnvelope(tampered, mmdd);
+    await decryptEnvelope(tampered, answer);
     throw new Error('3번 실패: 변조된 암호문이 복호화되었습니다.');
   } catch (e) {
     if (!(e instanceof UnlockError) || e.kind !== 'wrong') throw e;
@@ -117,7 +130,7 @@ function promptHidden(label) {
       for (const ch of chunk) {
         if (ch === '\r' || ch === '\n') { cleanup(); resolvePrompt(buffer); return; }
         if (ch === '\u0003') { cleanup(); rejectPrompt(new Error('취소되었습니다.')); return; }
-        if (ch === '\u007f' || ch === '\b') { buffer = buffer.slice(0, -1); continue; }
+        if (ch === '\u007f' || ch === '\b') { buffer = Array.from(buffer).slice(0, -1).join(''); continue; }
         buffer += ch;
       }
     };
@@ -147,29 +160,31 @@ async function main() {
 
   let answer;
   try {
-    answer = await promptHidden('정답을 입력하세요 (화면에 보이지 않습니다): ');
+    answer = await promptHidden('정답을 정해진 표기 그대로 입력하세요. 한글은 마지막 글자 뒤에 공백을 한 번 눌러 확정한 뒤 Enter를 누르세요 (화면에 보이지 않습니다): ');
   } catch (e) {
     fail(e.message);
   }
-  const mmdd = normalizeAnswer(answer);
-  if (!mmdd) fail('입력을 날짜로 해석하지 못했습니다.');
+  const normalized = normalizeAnswer(answer);
+  if (!normalized) fail('정답이 비어 있습니다.');
+  // 한글 입력기에서는 마지막 글자가 빠질 수 있어, 내용은 보이지 않고 글자 수만 알려 줍니다. (ADR-095)
+  console.log(`입력한 글자 수(앞뒤 공백 제외): ${Array.from(normalized).length}자 — 정답의 글자 수와 같은지 확인하세요.`);
 
   try {
     if (selfTest) {
       const envelope = JSON.parse(await readFile(OUT_PATH, 'utf8'));
-      await verifyEnvelope(envelope, mmdd, expected);
+      await verifyEnvelope(envelope, normalized, expected);
       console.log('셀프 테스트 통과: 정답 일치, 틀린 정답 거부, 변조 거부');
       return;
     }
 
-    const envelope = await encryptPayload(expected, mmdd);
+    const envelope = await encryptPayload(expected, normalized);
 
     await mkdir(dirname(OUT_PATH), { recursive: true });
     const tmp = `${OUT_PATH}.tmp`;
     try {
       await writeFile(tmp, `${JSON.stringify(envelope)}\n`, 'utf8');
       // 쓴 파일을 다시 읽어 검증한 뒤에 이름을 바꿉니다. (ADR-042, ADR-051)
-      await verifyEnvelope(JSON.parse(await readFile(tmp, 'utf8')), mmdd, expected);
+      await verifyEnvelope(JSON.parse(await readFile(tmp, 'utf8')), normalized, expected);
       await rename(tmp, OUT_PATH);
     } catch (e) {
       await rm(tmp, { force: true });

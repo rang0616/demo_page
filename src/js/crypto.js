@@ -50,11 +50,11 @@ export function getSubtle() {
   return subtle;
 }
 
-// 정규화된 정답 "MMDD"(UTF-8 바이트)로 AES-256 키를 만듭니다.
-export async function deriveKey(mmdd, salt) {
+// 정답(normalizeAnswer가 돌려준 문자열의 UTF-8 바이트, ADR-095)으로 AES-256 키를 만듭니다.
+export async function deriveKey(answer, salt) {
   const subtle = getSubtle();
   const material = await subtle.importKey(
-    'raw', new TextEncoder().encode(mmdd), 'PBKDF2', false, ['deriveKey'],
+    'raw', new TextEncoder().encode(answer), 'PBKDF2', false, ['deriveKey'],
   );
   return subtle.deriveKey(
     { name: KDF.name, hash: KDF.hash, salt, iterations: KDF.iter },
@@ -101,11 +101,11 @@ export function validatePayload(payload) {
   return payload;
 }
 
-// 봉투를 정규화된 정답으로 복호화합니다. 성공하면 평문 객체를 돌려줍니다.
-export async function decryptEnvelope(env, mmdd) {
+// 봉투를 정답(normalizeAnswer의 결과)으로 복호화합니다. 성공하면 평문 객체를 돌려줍니다.
+export async function decryptEnvelope(env, answer) {
   const subtle = getSubtle();
   const { salt, iv, ct } = parseEnvelope(env);
-  const key = await deriveKey(mmdd, salt);
+  const key = await deriveKey(answer, salt);
 
   let plain;
   try {

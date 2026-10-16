@@ -31,7 +31,7 @@
 ## 암호문 재생성 절차
 
 1. `design/private/secrets.md`에서 정답과 편지 원문을 확인합니다. (이 파일은 저장소 밖으로 내보내지 않습니다)
-2. `tools/encrypt.mjs`를 실행합니다. 도구는 `secrets.md`의 `편지 원문` 아래 첫 코드 블록만 읽습니다. `정답:` 줄은 읽지 않습니다. 블록을 찾지 못하면 실패합니다. (ADR-042) 정답은 실행 중 프롬프트에 입력합니다(입력값이 화면에 보이지 않게). 명령 인자나 환경 변수로 넘기지 않으며, 정답을 담은 파일을 만들지 않습니다.
+2. `tools/encrypt.mjs`를 실행합니다(편지 문단의 `[[ ]]` 짝이 맞지 않으면 문단 번호만 알리고 실패합니다, ADR-098). 도구는 `secrets.md`의 `편지 원문` 아래 첫 코드 블록만 읽습니다. `정답:` 줄은 읽지 않습니다. 블록을 찾지 못하면 실패합니다. (ADR-042) 정답은 실행 중 프롬프트에 입력합니다(입력값이 화면에 보이지 않게). 한글로 입력할 때는 마지막 글자가 조합 중이라 빠질 수 있으므로 입력 뒤 공백을 한 번 누르고 Enter를 누르며, 도구가 알려 주는 글자 수(앞뒤 공백 제외)가 정답의 글자 수와 같은지 확인합니다. (ADR-095) 명령 인자나 환경 변수로 넘기지 않으며, 정답을 담은 파일을 만들지 않습니다.
 3. 결과물 `src/data/letter.enc.json`만 갱신합니다. 정답이나 원문이 `src/`에 평문으로 들어가면 안 됩니다.
 4. 복호화 테스트: 도구에 셀프 테스트 옵션으로 정답을 다시 넣어 본문이 원문과 같은지 확인하고, 틀린 정답에서는 실패하는지 확인합니다. Node는 내장 `crypto`만 씁니다.
 5. 커밋 전에 `git diff --cached`로 평문 편지나 정답이 없는지 확인합니다.
@@ -40,7 +40,7 @@
 
 - 암호문은 **한 번 만들어서 파일에 넣는** 방식입니다. 생성 스크립트 하나(`tools/`)가 필요합니다.
 - 프로젝트의 빌드 없음 방침(`CLAUDE.md` 검증 방법)과 충돌하지 않도록, 이 스크립트는 **본문이 바뀔 때만 실행하는 일회성 도구**로 둡니다. 배포 과정에 끼지 않습니다.
-- 정답 정규화(ADR-025)와 암호문 포맷(ADR-026)을 따릅니다.
+- 정답 처리(ADR-095, 날짜 정규화 ADR-025를 대체)와 암호문 포맷(ADR-026)을 따릅니다. 정답 입력은 암호문 도구에도 정답과 완전히 같은 표기로 해야 합니다.
 - 편지를 고치면 암호문을 다시 만듭니다. 절차는 아래 '암호문 재생성 절차'를 따릅니다.
 
 ## 파일 구성 (ADR-020, ADR-050)
@@ -51,8 +51,8 @@
 src/                    # 배포 폴더 (GitHub Actions로 배포, ADR-050)
   index.html             # 구조와 문구
   css/style.css          # 스타일
-  js/normalize.js        # 정답 정규화 (순수 함수, 도구와 공유, ADR-039)
-  js/accent.js           # 바우처 값에서 강조할 글자("20회")를 나누는 순수 함수 (ADR-085)
+  js/normalize.js        # 정답 처리 (NFC·trim, 순수 함수, 도구와 공유, ADR-039, ADR-095)
+  js/accent.js           # 강조할 글자를 나누는 순수 함수: 바우처 "20회"(ADR-085), 편지 `[[ ]]` 표시(ADR-098)
   js/crypto.js           # 키 파생과 복호화 (ADR-040)
   js/screens.js          # 화면과 카드 전환(이전 카드 포함), 바우처·편지 표시, 편지 봉투 열기, 센터 주소 복사 (ADR-041, ADR-047, ADR-060, ADR-061, ADR-065, ADR-066)
   js/sound.js            # 효과음 합성: 뾱(버튼), 뿅(상자), 짜잔 (ADR-027, ADR-055, ADR-058)
@@ -84,7 +84,7 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 | 호스트 | 용도 |
 |--------|------|
 | `cdn.jsdelivr.net` | Pretendard 본문 글꼴 (버전 고정) |
-| `fonts.googleapis.com`, `fonts.gstatic.com` | 나눔손글씨 펜 편지 글꼴 (제공 확인 완료) |
+| `fonts.googleapis.com`, `fonts.gstatic.com` | 편지 글꼴 감자꽃(ADR-093)과 답란 글꼴 나눔손글씨 펜 (제공 확인 완료: 나눔손글씨 펜 2026-10-15, 감자꽃 2026-10-16, css2 응답 200) |
 | `rang0616.github.io` | 링크 미리보기 이미지(`og:image`)의 절대 주소에만 씁니다. 이 사이트 자신입니다. (ADR-064) |
 | `map.naver.com` | **이동 링크만** (센터 주소 검색). 리소스는 불러오지 않습니다. 새 탭, `rel="noopener noreferrer"` (ADR-012, ADR-060) |
 
@@ -128,8 +128,8 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 
 ## 테스트 (ADR-039)
 
-- 정규화 함수는 `src/js/normalize.js` 한 곳에만 둡니다. 페이지와 도구가 같은 파일을 import합니다.
-- `tests/normalize.test.mjs`가 `node --test tests/*.test.mjs`로 ADR-025의 테스트 표를 검증합니다.
+- 정답 처리 함수(`normalizeAnswer`: NFC, 앞뒤 공백 제거, 빈 값은 null. ADR-095)는 `src/js/normalize.js` 한 곳에만 둡니다. 페이지와 도구가 같은 파일을 import합니다.
+- `tests/normalize.test.mjs`가 `node --test tests/*.test.mjs`로 ADR-095의 규칙을 검증합니다(예시는 실제 정답과 무관한 값).
 - 암호 왕복은 `--self-test`와 `tests/crypto.test.mjs`(가짜 정답과 가짜 본문 사용)가 맡습니다. 페이지의 복호화는 수동 체크리스트로 확인합니다(08 검증 절). (ADR-049)
 
 ## 복호화 오류 처리와 봉투 버전 (ADR-040)
@@ -149,7 +149,7 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 - 잠금 해제 후에는 카드를 한 장씩 넘깁니다: 효과음과 상자 연출 → 바우처 → 편지 → 센터 안내 → 예약 문구. 카드는 "다음" 버튼으로만 넘어갑니다. (ADR-047, ADR-055)
 - 화면 전환 후 새 섹션 제목에 `tabindex="-1"`로 포커스를 옮깁니다. 대기·틀림 문구는 `role="status"`, 오류 화면은 `role="alert"`로 알립니다. (ADR-051)
 - 지원 기기(ADR-083): 최종 수신자 윰댕의 갤럭시(S24로 알고 있음, 약 360×780, 안드로이드 크롬·삼성 인터넷·카카오톡 인앱)가 기준이고, 휘님의 아이폰 14 Pro(393×852, iOS 16 이상 Safari·카카오톡 인앱)에서도 같게 나옵니다. 그 밖에는 최근 2년 안의 버전이며 최소 폭은 320px입니다. 페이지는 밝은 색 구성만 지원한다고 알립니다(`<meta name="color-scheme" content="only light">`, CSS `color-scheme: only light`. 크롬의 강제 다크 모드 변환을 막고, 삼성 인터넷은 보장하지 못하는 한계). `-webkit-text-size-adjust`와 `text-size-adjust`는 100%입니다(브라우저의 글자 자동 확대 방지. 사용자의 글자 크기 설정은 막지 않음). iOS에서는 무음 모드에서 소리가 나지 않을 수 있고(한계), 입력창 글자는 16px 이상을 유지합니다.
-- 모듈 역할: `normalize.js`(순수 함수), `accent.js`(바우처 값에서 강조할 글자를 나누는 순수 함수 `splitAccent`, ADR-085), `crypto.js`(키 파생, 복호화, 오류 구분), `screens.js`(화면과 카드 표시, 이동, 포커스, 바우처 채우기("20회" 강조, `VOUCHER_ACCENT`, ADR-085)와 편지 채우기, 편지 봉투 열기, 이전 카드, 예약 달력, 센터 주소 복사와 지도 링크), `sound.js`(효과음 합성), `confetti.js`(폭죽), `app.js`(흐름 연결).
+- 모듈 역할: `normalize.js`(순수 함수), `accent.js`(강조할 글자를 나누는 순수 함수: 바우처 `splitAccent` ADR-085, 편지 `splitMarked`·`markersBalanced` ADR-098), `crypto.js`(키 파생, 복호화, 오류 구분), `screens.js`(화면과 카드 표시, 이동, 포커스, 바우처 채우기("20회" 강조, `VOUCHER_ACCENT`, ADR-085)와 편지 채우기, 편지 봉투 열기, 이전 카드, 예약 달력, 센터 주소 복사와 지도 링크), `sound.js`(효과음 합성), `confetti.js`(폭죽), `app.js`(흐름 연결).
 
 ## 보조 규칙 (ADR-042, ADR-043)
 
@@ -207,14 +207,15 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 
 ## 편지와 센터 안내 구현 (ADR-060)
 
-- 편지 카드 묶음(`article#card-letter`)은 봉투(`#envelope`)와 편지 본문(`#letter-body`)을 함께 갖고, 이 `article`의 `data-state`가 `sealed → opening → open`으로 바뀝니다. 처음에는 봉투만 보이고 본문(`hidden`)과 "다음" 버튼 구역(`.card-actions`, `hidden`)은 숨겨져 있습니다. 봉인 버튼(`#seal-button`)을 누르면 `opening`(덮개와 종이 움직임, CSS 전환)이 되고, 약 0.8초(`ENVELOPE_OPEN_MS`, ADR-075) 뒤 봉투를 숨기고 본문과 "다음" 버튼 구역을 보여 주며 `open`이 됩니다. 이때 포커스는 본문(`tabindex="-1"`)으로 옮깁니다. 모션 감소 설정이면 `opening`을 거치지 않고 바로 `open`입니다. 카드의 이름은 제목 `#letter-heading`(`h1`, 처음에는 "편지가 도착했습니다!"로 보이고 편지가 열리면 `sr-only`로 바뀜, ADR-074)이 맡습니다. (ADR-066) 봉투 상태(`sealed`)에서는 제목이 깜빡이고(`notice-blink`, 1.6초) 봉투가 좌우로 흔들리며(`envelope-wiggle`, 2.4초 주기) `opening`이 되면 둘 다 멈추고(제목은 전환 없이 바로 사라져 다시 진해지는 번쩍임이 없고, 봉투는 바로 반듯해짐), 모션 감소 설정에서는 없습니다. 둘 다 카드 등장 연출(0.7초)이 끝난 뒤 시작합니다. JS는 관여하지 않는 CSS 애니메이션입니다. (ADR-087)
+- 편지 카드 묶음(`article#card-letter`)은 봉투(`#envelope`)와 편지 본문(`#letter-body`)을 함께 갖고, 이 `article`의 `data-state`가 `sealed → opening → open`으로 바뀌고, 열린 뒤 접기 버튼(`button#fold-button`, 마크업은 이전 버튼 다음, `hidden`으로 시작, `open`이 되면 보임, ADR-097)을 누르면 `open → sealed`로 돌아갑니다(봉투·제목을 다시 보이고 제목의 클래스를 `letter-heading`으로 되돌리며, 본문·"다음" 구역·접기 버튼을 숨기고, 포커스를 봉인 버튼으로 옮김). 처음에는 봉투만 보이고 본문(`hidden`)과 "다음" 버튼 구역(`.card-actions`, `hidden`)은 숨겨져 있습니다. 봉인 버튼(`#seal-button`)을 누르면 `opening`(덮개와 종이 움직임, CSS 전환)이 되고, 약 0.8초(`ENVELOPE_OPEN_MS`, ADR-075) 뒤 봉투를 숨기고 본문과 "다음" 버튼 구역을 보여 주며 `open`이 됩니다. 이때 포커스는 본문(`tabindex="-1"`)으로 옮깁니다. 모션 감소 설정이면 `opening`을 거치지 않고 바로 `open`입니다. 카드의 이름은 제목 `#letter-heading`(`h1`, 처음에는 "편지가 도착했습니다!"로 보이고 편지가 열리면 `sr-only`로 바뀜, ADR-074)이 맡습니다. (ADR-066) 봉투 상태(`sealed`)에서는 제목이 깜빡이고(`notice-blink`, 1.6초) 봉투가 좌우로 흔들리며(`envelope-wiggle`, 2.4초 주기) `opening`이 되면 둘 다 멈추고(제목은 전환 없이 바로 사라져 다시 진해지는 번쩍임이 없고, 봉투는 바로 반듯해짐), 모션 감소 설정에서는 없습니다. 둘 다 카드 등장 연출(0.7초)이 끝난 뒤 시작합니다. JS는 관여하지 않는 CSS 애니메이션입니다. (ADR-087)
 - 예약 안내 카드의 달력(`#calendar`, ADR-069, ADR-072)은 이렇게 만듭니다.
   - JS가 `CALENDAR_MONTHS`(2026년 10월, 11월)로 만들어 채웁니다. 달마다 `div.calendar-month` 안의 `table`(`caption` "2026년 10월", 요일 `th`, 날짜 `td`)이고, 1일의 요일은 `new Date(연, 월-1, 1).getDay()`, 말일은 `new Date(연, 월, 0).getDate()`로 계산합니다. 슬라이드는 CSS 스크롤 스냅(가로)이며, 달력 영역은 `role="region"`, `tabindex="0"`, `aria-label="10월과 11월 달력"`입니다. 스크롤 비율로 아래 점의 현재 표시(`is-current`, `aria-current`)를 갱신합니다. 내용 프레임 안의 버튼은 아래의 월 이동 점 두 개(`button.calendar-dot`, 누르면 `calendar.scrollTo`로 그 달 슬라이드로 이동, ADR-077)뿐이고(이전 버튼은 카드 묶음에 있음, ADR-081) 링크와 입력창은 없습니다.
   - 한 장은 영역 폭의 100%이고, 열이 일요일(0번째)이면 `is-sun`, 토요일(6번째)이면 `is-sat` 클래스를 요일 머리글과 날짜 칸에 붙여 색을 정하며(ADR-079), 날짜 칸은 오늘(`new Date()`의 날짜, 시각 제외)보다 앞이면 `is-past` 클래스, 코드 상수 `CALENDAR_BIRTHDAY`(11월 18일)와 같으면 `is-birthday` 클래스와 하트 요소(`aria-hidden`), 보이지 않는 글 "윰댕 생일"(`sr-only`)을 갖습니다.
 - 센터 카드(`div.card.center`(CSS가 메탈 모양을 입힘))의 버튼은 `.center-actions` 안에 한 줄로 지도 링크(`#map-link`, 보이는 글 "지도로 보기", `aria-label="네이버 지도로 보기"`)가 왼쪽, 주소 복사(`#copy-address`)가 오른쪽에 있고 복사 결과 문구 `#copy-status`는 그 아래입니다. (ADR-090) 지도 링크는 앞에 인라인 SVG "N" 아이콘(`aria-hidden`)을 두고, 색은 `--naver`, `--on-naver` 변수로 정합니다. 소개 문구 목록(`.center-benefits`)은 삭제했습니다. (ADR-068)
-- 편지의 맺음말은 편지의 마지막 항목이지만, 암호문을 다시 만들기 전까지는 `screens.js`의 `CLOSING_OVERRIDE`가 있으면 그 값(서명)을 대신 보여 줍니다. 암호문을 다시 만든 뒤 이 상수를 지웁니다. (ADR-076)
-- 카드 마크업(ADR-081): `article#card-…`(`class="card-stack"`, `data-card`, `tabindex="-1"`, `aria-labelledby`) 안에 이전 버튼(`button.back-button[data-back]`, 바우처 제외), 내용 프레임(`div.card`에 카드별 클래스 `voucher`/`letter`/`center`/`booking`), "다음" 버튼 구역(`div.card-actions`, 안에 `button[data-next]`, 마지막 카드 제외)을 차례로 둡니다. 등장 연출은 `article` 전체에 붙습니다. 편지 카드의 `data-state`는 `article`에 있고, 열리면(`open`) CSS가 프레임의 좌우·아래 여백을 없앱니다. 편지 카드의 프레임은 봉투 상태에서도 흰 바탕과 그림자가 없습니다(ADR-086).
-- 이전 버튼은 카드마다 하나씩이며 보이고 숨기는 JS가 없습니다(바우처 카드에는 아예 없음). 누르면 한 장 앞 카드를 보여 줍니다. 편지 카드의 "다음" 버튼 구역(`.card-actions`)은 `hidden`으로 시작해 편지가 열리면 JS가 보여 줍니다. (ADR-065, ADR-081)
+- 편지 본문 문단의 강조(ADR-098): 문단 안에서 `[[`와 `]]`로 감싼 문구를 `splitMarked`가 `{ text, accent }` 조각으로 나누고, 화면 코드가 텍스트 노드와 `span.letter-accent`(`textContent`만 사용)로 채워 표시 문자는 보이지 않게 합니다. 짝이 맞지 않는 문단(`markersBalanced`가 거짓)은 글자 그대로 보여 줍니다. 암호문 도구는 짝이 맞지 않는 문단이 있으면 몇 번째 문단인지(번호만)를 알리고 실패합니다. 호칭과 맺음말에는 적용하지 않습니다.
+- 편지의 맺음말은 암호문의 마지막 항목(`letter[letter.length - 1]`)을 그대로 보여 줍니다. 임시로 서명을 대신 보여 주던 `CLOSING_OVERRIDE`는 2026-10-17에 암호문을 다시 만든 뒤 지웠습니다. (ADR-076)
+- 카드 마크업(ADR-081): `article#card-…`(`class="card-stack"`, `data-card`, `tabindex="-1"`, `aria-labelledby`) 안에 이전 버튼(`button.back-button[data-back]`, 바우처 제외), (편지 카드만) 접기 버튼(`button#fold-button.fold-button`, ADR-097), 내용 프레임(`div.card`에 카드별 클래스 `voucher`/`letter`/`center`/`booking`), "다음" 버튼 구역(`div.card-actions`, 안에 `button[data-next]`, 마지막 카드 제외)을 차례로 둡니다. 등장 연출은 `article` 전체에 붙습니다. 편지 카드의 `data-state`는 `article`에 있고, 열리면(`open`) CSS가 프레임의 좌우·아래 여백을 없앱니다. 편지 카드의 프레임은 봉투 상태에서도 흰 바탕과 그림자가 없습니다(ADR-086).
+- 이전 버튼은 카드마다 하나씩이며 보이고 숨기는 JS가 없습니다(바우처 카드에는 아예 없음). 누르면 한 장 앞 카드를 보여 줍니다. 편지 카드의 "다음" 버튼 구역(`.card-actions`)은 `hidden`으로 시작해 편지가 열리면 JS가 보여 주고, 접기 버튼을 누르면 다시 숨깁니다. 접기 버튼(`#fold-button`)도 `hidden`으로 시작해 `open`이 되면 보이고 접으면 숨깁니다. 접을 때 `article`에 `data-refold`를 붙여 `.letter`가 0.35초 페이드로 나타나게 하고(페이드가 끝나거나 `opening`이 되면 지움), 포커스는 봉인 버튼으로 옮깁니다. (ADR-065, ADR-081, ADR-097)
 - 센터 정보는 공개 HTML에 정적으로 둡니다. 주소는 `<address>` 텍스트 한 곳이며, 복사할 값과 지도 링크의 검색어는 이 텍스트에서 읽습니다. 지도 링크의 주소(`href`)는 JS가 이 텍스트로 만듭니다.
 - 주소 복사는 `navigator.clipboard.writeText`만 씁니다. 실패하면(API가 없거나 거부됨) 실패 문구를 보여 줍니다. 복사 결과 문구는 `role="status"` 영역에 같은 방식으로 다시 읽히게 갱신합니다.
 - 지도 링크는 새 탭(`target="_blank"`)이며 `rel="noopener noreferrer"`를 붙입니다.
