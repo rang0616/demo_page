@@ -77,8 +77,18 @@ test('카드 묶음 구조: article.card-stack 안에 내용 프레임 하나, �
   }
   assert.ok(!article('card-voucher').includes('data-back'), '바우처 카드에는 이전 버튼이 없습니다.');
   assert.match(css, /\.card-stack \{[^}]*display: flex;[^}]*flex-direction: column;[^}]*gap: 16px;/);
-  assert.match(css, /#card-letter\[data-state="open"\] \.letter \{[^}]*background: none;[^}]*box-shadow: none;/, '열린 편지는 프레임 없이 보여야 합니다.');
+  const letterFrame = css.match(/#card-letter \.letter \{([^}]*)\}/)?.[1] ?? '';
+  assert.match(letterFrame, /background: none;/, '편지 카드는 봉투 상태에서도 프레임(흰 배경)이 없어야 합니다. (ADR-086)');
+  assert.match(letterFrame, /box-shadow: none;/, '편지 카드는 봉투 상태에서도 프레임 그림자가 없어야 합니다. (ADR-086)');
+  assert.ok(!/padding/.test(letterFrame), '봉투 상태의 프레임 여백(레이아웃)은 바꾸지 않습니다. 여백은 열렸을 때 규칙에서만 줄입니다.');
   assert.match(css, /#card-letter\[data-state="open"\] \.letter \{[^}]*padding-right: 0;[^}]*padding-bottom: 0;[^}]*padding-left: 0;/, '열린 편지의 좌우·아래 안쪽 여백은 0이어야 합니다(위쪽 64px은 이전 버튼 자리).');
+  // 프레임을 없애는 규칙(background: none, box-shadow: none)은 편지 카드에만 있어야 합니다. 다른 카드의 프레임 선택자가 들어 있으면 안 됩니다.
+  const frameSelector = /(^|[\s,])(\.card|\.center|\.booking|\.voucher|#card-center|#card-booking|#card-voucher)(?![-\w])/;
+  for (const [, selector, body] of css.matchAll(/([^{}]+)\{([^}]*(?:background: none|box-shadow: none)[^}]*)\}/g)) {
+    const own = selector.trim();
+    if (own.includes('#card-letter')) continue;
+    assert.ok(!frameSelector.test(own), `다른 카드의 프레임에 배경·그림자 제거 규칙이 있습니다: ${own}`);
+  }
   assert.match(css, /\.back-button \{[^}]*position: absolute;[^}]*top: 12px;[^}]*left: 12px;/, '이전 버튼은 프레임 왼쪽 위 12px에 겹쳐 놓입니다.');
   assert.match(css, /\.card\.letter,\s*\.card\.center,\s*\.card\.booking \{[^}]*padding-top: 64px;/, '이전 버튼이 있는 프레임은 위쪽 안쪽 여백이 64px이어야 합니다.');
 });
@@ -357,6 +367,16 @@ test('src/js의 모든 상대 import에 버전 쿼리가 있다: 같은 모듈�
       assert.match(spec, /\.js\?v=\d+\.\d+\.\d+$/, `src/js/${file}: 버전 쿼리가 없는 import ${spec}`);
     }
   }
+});
+
+test('편지지는 흰색이고, 이전 버튼에 올림·누름 효과가 있다 (ADR-086)', () => {
+  assert.match(css, /--paper: #FFFFFF;/);
+  assert.ok(!css.includes('#FFFDF8'), '옛 아이보리 색이 남아 있습니다.');
+  const back = css.match(/(?:^|\n)\.back-button \{([^}]*)\}/)[1];
+  assert.match(back, /transition: background 0\.15s ease, transform 0\.1s ease;/, '"다음" 버튼과 같은 속도여야 합니다.');
+  assert.match(css, /@media \(hover: hover\) \{\s*\.back-button:hover \{\s*background: var\(--accent-hover\);\s*\}\s*\}/, '마우스를 올리면 분홍색이어야 합니다(마우스가 있는 기기에서만).');
+  assert.match(css, /\.back-button:active \{\s*background: var\(--accent-hover\);\s*transform: scale\(0\.95\);\s*\}/, '누르는 동안 분홍색이고 살짝 작아져야 합니다.');
+  assert.match(css, /\.button:active:not\(:disabled\) \{\s*transform: scale\(0\.98\);/, '"다음" 버튼의 기준 값입니다.');
 });
 
 test('코드에 innerHTML, console, 저장소 접근, history 조작이 없다 (ADR-026, ADR-057)', async () => {
