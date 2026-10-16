@@ -379,6 +379,73 @@ test('편지지는 흰색이고, 이전 버튼에 올림·누름 효과가 있�
   assert.match(css, /\.button:active:not\(:disabled\) \{\s*transform: scale\(0\.98\);/, '"다음" 버튼의 기준 값입니다.');
 });
 
+test('편지 봉투 알림 연출: 제목 깜빡임과 봉투 흔들림, 열기 시작하면 멈춤 (ADR-087)', () => {
+  const block = (selector) => css.match(new RegExp(`(?:^|\\n)${selector} \\{([^}]*)\\}`))?.[1] ?? '';
+  assert.match(block('\\.letter-heading'), /animation: notice-blink 1\.6s ease-in-out 0\.7s infinite;/, '제목은 1.6초 주기로, 카드 등장 뒤(0.7초 지연)부터 깜빡여야 합니다.');
+  assert.match(css, /@keyframes notice-blink \{\s*0%, 100% \{ opacity: 1; \}\s*50%\s+\{ opacity: 0\.15; \}/, '불투명도는 1 ↔ 0.15이어야 합니다(완전히 사라지지 않음).');
+  assert.match(block('\\.envelope'), /animation: envelope-wiggle 2\.4s ease-in-out 0\.7s infinite;/, '봉투는 2.4초 주기로, 0.7초 지연 뒤 흔들려야 합니다.');
+  assert.match(block('\\.envelope'), /transform-origin: 50% 100%;/, '아래 가운데를 축으로 흔들립니다.');
+  const keyframes = css.match(/@keyframes envelope-wiggle \{([\s\S]*?)\n\}/)[1];
+  const angles = [...keyframes.matchAll(/rotate\((-?[\d.]+)deg\)/g)].map((m) => Math.abs(Number(m[1])));
+  assert.ok(angles.length > 0 && Math.max(...angles) <= 2.5, '흔들림은 ±2.5도를 넘지 않아야 합니다.');
+  assert.match(keyframes, /0%, 33\.3%, 100% \{ transform: rotate\(0deg\); \}/, '앞 0.8초(33.3%)만 흔들리고 나머지는 멈춰야 합니다.');
+  const openingHeading = block('#card-letter\\[data-state="opening"\\] \\.letter-heading');
+  assert.match(openingHeading, /opacity: 0;/, '열기 시작하면 제목은 사라져야 합니다.');
+  assert.match(openingHeading, /transition: none;/, '번쩍임이 없게 전환 없이 사라져야 합니다.');
+  assert.match(openingHeading, /animation: none;/, '열기 시작하면 깜빡임이 멈춰야 합니다.');
+  assert.ok(!/transition/.test(block('\\.letter-heading')), '제목의 옛 0.15초 페이드 전환은 ADR-087로 대체되었습니다.');
+  assert.match(block('#card-letter\\[data-state="opening"\\] \\.envelope'), /animation: none;/, '열기 시작하면 봉투 흔들림이 멈춰야 합니다.');
+  const reduced = css.slice(css.indexOf('@media (prefers-reduced-motion: reduce) {'));
+  assert.ok(reduced.length > 0, '모션 감소 규칙이 있어야 합니다.');
+  const reducedBlock = reduced.slice(0, reduced.indexOf('\n}\n') + 3);
+  assert.match(reducedBlock, /animation: none !important;/, '모션 감소 설정에서는 모든 애니메이션이 꺼져야 합니다.');
+  assert.match(reducedBlock, /transition: none !important;/);
+  assert.ok(!screens.includes('notice-blink') && !screens.includes('envelope-wiggle'), '이 연출은 CSS만 씁니다(JS 관여 없음).');
+});
+
+test('첫 화면은 알림 배너 카드: 구조, 장식 aria-hidden, 제목만 읽힘, 시작 버튼은 카드 밖 (ADR-088)', () => {
+  const intro = html.match(/<section id="screen-intro"[\s\S]*?<\/section>/)[0];
+  assert.match(intro, /<div class="intro-stack">\s*(?:<!--[\s\S]*?-->\s*)?<div class="notice-card">/);
+  assert.match(intro, /<div class="notice-icon-box" aria-hidden="true">\s*<span class="notice-ring"><\/span>\s*<span class="notice-ring notice-ring-2"><\/span>\s*<span class="notice-ring notice-ring-3"><\/span>\s*<span class="notice-icon">🎁<span class="notice-badge">1<\/span><\/span>\s*<\/div>/, '아이콘 상자(물결 셋, 🎁, 배지)는 장식(aria-hidden)이어야 합니다.');
+  assert.match(intro, /<div class="notice-head" aria-hidden="true"><span>선물 도착<\/span><span>지금<\/span><\/div>/, '머리글은 장식(aria-hidden)이고 문구는 02에 있습니다.');
+  assert.match(intro, /<h1 id="intro-title" class="notice-title" tabindex="-1">윰댕님<span aria-hidden="true">❤️<\/span>!<br>선물<span aria-hidden="true">🎁<\/span>이 도착했습니다\.<\/h1>/, '제목 문구는 그대로여야 합니다.');
+  const noComments = intro.replace(/<!--[\s\S]*?-->/g, '');
+  const cardOnly = noComments.slice(noComments.indexOf('<div class="notice-card">'), noComments.search(/<\/div>\s*<button id="start-button"/));
+  assert.ok(cardOnly.length > 0 && !cardOnly.includes('start-button'), '시작 버튼은 알림 카드 밖(카드 아래)에 있어야 합니다.');
+  assert.match(noComments, /<\/div>\s*<button id="start-button"/);
+  assert.match(intro, /<button id="start-button" type="button" class="button" disabled>지금 바로 확인하기<\/button>/);
+  assert.ok(content.includes('선물 도착 (왼쪽) / 지금 (오른쪽)'), '02에 머리글 문구가 있어야 합니다.');
+  assert.ok(!intro.includes('class="card intro-card"') && !intro.includes('class="question"'), '옛 안내 화면 카드와 제목 클래스는 쓰지 않습니다.');
+});
+
+test('첫 화면 알림 연출의 CSS: 내려옴, 시작 버튼 나타남, 벨 울림, 물결, 색과 변수 (ADR-088)', () => {
+  const block = (selector) => css.match(new RegExp(`(?:^|\\n)${selector} \\{([^}]*)\\}`))?.[1] ?? '';
+  assert.match(block('\\.notice-card'), /animation: notice-in 0\.7s ease-out backwards;/);
+  assert.match(block('\\.notice-card'), /border-radius: 22px;/);
+  assert.match(block('\\.notice-card'), /box-shadow: var\(--shadow-notice\);/);
+  assert.match(block('\\.notice-icon'), /animation: bell-ring 3s ease-in-out 1\.2s infinite;/, '아이콘은 1.2초 뒤부터 3초 주기로 울립니다.');
+  assert.match(block('\\.notice-icon'), /transform-origin: 50% 12%;/);
+  assert.match(block('\\.notice-ring'), /animation: ring-pulse 3s ease-out 1\.2s infinite;/);
+  assert.match(block('\\.notice-ring-2'), /animation-delay: 1\.32s;/);
+  assert.match(block('\\.notice-ring-3'), /animation-delay: 1\.44s;/);
+  const bell = css.match(/@keyframes bell-ring \{([\s\S]*?)\n\}/)[1];
+  const angles = [...bell.matchAll(/rotate\((-?[\d.]+)deg\)/g)].map((m) => Math.abs(Number(m[1])));
+  assert.ok(Math.max(...angles) <= 14, '벨 울림은 ±14도를 넘지 않아야 합니다.');
+  assert.match(bell, /0%, 30%, 100% \{ transform: rotate\(0deg\); \}/, '앞 0.9초(30%)만 울리고 나머지는 멈춥니다.');
+  assert.match(css, /--notify-red: #D32F45;/);
+  assert.match(css, /--shadow-notice: /);
+  assert.match(block('\\.notice-badge'), /color: var\(--on-seal\);[^}]*background: var\(--notify-red\);/);
+  assert.match(block('\\.intro-stack'), /gap: 28px;[^}]*margin-bottom: 140px;/, '가운데보다 약 70px 위에 놓되 잘리지 않아야 합니다.');
+  assert.match(css, /@keyframes notice-in \{\s*0%\s+\{ opacity: 0; transform: translateY\(-150px\); \}\s*60%\s+\{ opacity: 1; transform: translateY\(14px\); \}/, '카드는 -150px 위에서 14px 지나쳤다 돌아와야 합니다.');
+  assert.match(css, /@keyframes ring-pulse \{\s*0%\s+\{ opacity: 0\.85; transform: scale\(1\); \}\s*30%\s+\{ opacity: 0; transform: scale\(1\.6\); \}/, '물결은 1배에서 1.6배로 퍼지며 옅어져야 합니다.');
+  assert.match(block('#start-button'), /animation: start-in 0\.4s ease-out 0\.7s backwards;/, '시작 버튼은 카드 등장(0.7초) 뒤에 0.4초 동안 나타나야 합니다.');
+  assert.ok(!/opacity: 0/.test(block('#start-button')), '시작 버튼의 기본 상태는 보이는 상태여야 모션 감소에서 처음부터 보입니다.');
+  assert.match(block('#start-button:focus-visible'), /animation: none;/, '키보드 포커스를 받으면 바로 보여야 합니다. (WCAG 2.4.7)');
+  assert.match(css, /@keyframes start-in \{\s*from \{ opacity: 0; transform: translateY\(12px\); \}\s*to\s+\{ opacity: 1; transform: none; \}/);
+  assert.ok(!/\.intro-card/.test(css), '옛 안내 카드 스타일은 지웁니다.');
+  assert.ok(!screens.includes('bell-ring') && !screens.includes('notice-in') && !screens.includes('ring-pulse'), '이 연출은 CSS만 씁니다(JS 관여 없음).');
+});
+
 test('코드에 innerHTML, console, 저장소 접근, history 조작이 없다 (ADR-026, ADR-057)', async () => {
   for (const file of await readdir(join(ROOT, 'src/js'))) {
     const code = (await read(`src/js/${file}`)).replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
