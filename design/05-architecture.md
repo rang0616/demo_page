@@ -179,7 +179,7 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 
 ## 카드 등장 연출과 로고 (ADR-056)
 
-- 카드는 `hidden`이 풀려 나타날 때 CSS 애니메이션 하나(`card-pop`, 0.7초)로 등장합니다. 별도의 JS 타이머는 쓰지 않습니다.
+- 카드 묶음(`article.card-stack`)은 `hidden`이 풀려 나타날 때 CSS 애니메이션 하나(`card-pop`, 0.7초)로 등장하며, 이전 버튼과 "다음" 구역도 함께 움직입니다. (ADR-081) 별도의 JS 타이머는 쓰지 않습니다.
 - 팡파레의 두 박자("빠" 약 0.14초, "밤" 약 0.28초)에 맞춰 키프레임의 두 지점(20%, 40%)에서 통통 튑니다. 연출이 끝난 뒤에는 연출 상태를 풀어 줍니다(`backwards`).
 - 모션 감소 설정이면 이 애니메이션은 꺼집니다(전역 규칙).
 - 로고는 `<img>`에 원본 크기(720×207)를 적어 레이아웃 흔들림을 막고, CSS로 카드 안쪽 폭에 맞춰 최대 300px로 보여 줍니다.
@@ -202,13 +202,14 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 
 ## 편지와 센터 안내 구현 (ADR-060)
 
-- 편지 카드는 봉투(`#envelope`)와 편지 본문(`#letter-body`)을 함께 갖고, 카드의 `data-state`가 `sealed → opening → open`으로 바뀝니다. 처음에는 봉투만 보이고 본문(`hidden`)과 "다음" 버튼(`hidden`)은 숨겨져 있습니다. 봉인 버튼(`#seal-button`)을 누르면 `opening`(덮개와 종이 움직임, CSS 전환)이 되고, 약 0.8초(`ENVELOPE_OPEN_MS`, ADR-075) 뒤 봉투를 숨기고 본문과 "다음" 버튼을 보여 주며 `open`이 됩니다. 이때 포커스는 본문(`tabindex="-1"`)으로 옮깁니다. 모션 감소 설정이면 `opening`을 거치지 않고 바로 `open`입니다. 카드의 이름은 제목 `#letter-heading`(`h1`, 처음에는 "편지가 도착했습니다!"로 보이고 편지가 열리면 `sr-only`로 바뀜, ADR-074)이 맡습니다. (ADR-066)
+- 편지 카드 묶음(`article#card-letter`)은 봉투(`#envelope`)와 편지 본문(`#letter-body`)을 함께 갖고, 이 `article`의 `data-state`가 `sealed → opening → open`으로 바뀝니다. 처음에는 봉투만 보이고 본문(`hidden`)과 "다음" 버튼 구역(`.card-actions`, `hidden`)은 숨겨져 있습니다. 봉인 버튼(`#seal-button`)을 누르면 `opening`(덮개와 종이 움직임, CSS 전환)이 되고, 약 0.8초(`ENVELOPE_OPEN_MS`, ADR-075) 뒤 봉투를 숨기고 본문과 "다음" 버튼 구역을 보여 주며 `open`이 됩니다. 이때 포커스는 본문(`tabindex="-1"`)으로 옮깁니다. 모션 감소 설정이면 `opening`을 거치지 않고 바로 `open`입니다. 카드의 이름은 제목 `#letter-heading`(`h1`, 처음에는 "편지가 도착했습니다!"로 보이고 편지가 열리면 `sr-only`로 바뀜, ADR-074)이 맡습니다. (ADR-066)
 - 예약 안내 카드의 달력(`#calendar`, ADR-069, ADR-072)은 이렇게 만듭니다.
-  - JS가 `CALENDAR_MONTHS`(2026년 10월, 11월)로 만들어 채웁니다. 달마다 `div.calendar-month` 안의 `table`(`caption` "2026년 10월", 요일 `th`, 날짜 `td`)이고, 1일의 요일은 `new Date(연, 월-1, 1).getDay()`, 말일은 `new Date(연, 월, 0).getDate()`로 계산합니다. 슬라이드는 CSS 스크롤 스냅(가로)이며, 달력 영역은 `role="region"`, `tabindex="0"`, `aria-label="10월과 11월 달력"`입니다. 스크롤 비율로 아래 점의 현재 표시(`is-current`, `aria-current`)를 갱신합니다. 버튼은 아래의 월 이동 점 두 개(`button.calendar-dot`, 누르면 `calendar.scrollTo`로 그 달 슬라이드로 이동, ADR-077)뿐이고 링크와 입력창은 없습니다.
+  - JS가 `CALENDAR_MONTHS`(2026년 10월, 11월)로 만들어 채웁니다. 달마다 `div.calendar-month` 안의 `table`(`caption` "2026년 10월", 요일 `th`, 날짜 `td`)이고, 1일의 요일은 `new Date(연, 월-1, 1).getDay()`, 말일은 `new Date(연, 월, 0).getDate()`로 계산합니다. 슬라이드는 CSS 스크롤 스냅(가로)이며, 달력 영역은 `role="region"`, `tabindex="0"`, `aria-label="10월과 11월 달력"`입니다. 스크롤 비율로 아래 점의 현재 표시(`is-current`, `aria-current`)를 갱신합니다. 내용 프레임 안의 버튼은 아래의 월 이동 점 두 개(`button.calendar-dot`, 누르면 `calendar.scrollTo`로 그 달 슬라이드로 이동, ADR-077)뿐이고(이전 버튼은 카드 묶음에 있음, ADR-081) 링크와 입력창은 없습니다.
   - 한 장은 영역 폭의 100%이고, 열이 일요일(0번째)이면 `is-sun`, 토요일(6번째)이면 `is-sat` 클래스를 요일 머리글과 날짜 칸에 붙여 색을 정하며(ADR-079), 날짜 칸은 오늘(`new Date()`의 날짜, 시각 제외)보다 앞이면 `is-past` 클래스, 코드 상수 `CALENDAR_BIRTHDAY`(11월 18일)와 같으면 `is-birthday` 클래스와 하트 요소(`aria-hidden`), 보이지 않는 글 "윰댕 생일"(`sr-only`)을 갖습니다.
 - 센터 카드의 버튼은 지도 링크(`#map-link`)가 위, 주소 복사(`#copy-address`)가 아래입니다. 지도 링크는 앞에 인라인 SVG "N" 아이콘(`aria-hidden`)을 두고, 색은 `--naver`, `--on-naver` 변수로 정합니다. 소개 문구 목록(`.center-benefits`)은 삭제했습니다. (ADR-068)
 - 편지의 맺음말은 편지의 마지막 항목이지만, 암호문을 다시 만들기 전까지는 `screens.js`의 `CLOSING_OVERRIDE`가 있으면 그 값(서명)을 대신 보여 줍니다. 암호문을 다시 만든 뒤 이 상수를 지웁니다. (ADR-076)
-- 이전 카드 버튼(`#back-button`)은 카드 화면 안에 하나만 두고, 현재 카드가 첫 카드가 아닐 때만 보입니다. 누르면 한 장 앞 카드를 보여 줍니다. (ADR-065)
+- 카드 마크업(ADR-081): `article#card-…`(`class="card-stack"`, `data-card`, `tabindex="-1"`, `aria-labelledby`) 안에 이전 버튼(`button.back-button[data-back]`, 바우처 제외), 내용 프레임(`div.card`에 카드별 클래스 `voucher`/`letter`/`center`/`booking`), "다음" 버튼 구역(`div.card-actions`, 안에 `button[data-next]`, 마지막 카드 제외)을 차례로 둡니다. 등장 연출은 `article` 전체에 붙습니다. 편지 카드의 `data-state`는 `article`에 있고, 열리면(`open`) CSS가 프레임의 바탕과 그림자와 좌우·아래 여백을 없앱니다.
+- 이전 버튼은 카드마다 하나씩이며 보이고 숨기는 JS가 없습니다(바우처 카드에는 아예 없음). 누르면 한 장 앞 카드를 보여 줍니다. 편지 카드의 "다음" 버튼 구역(`.card-actions`)은 `hidden`으로 시작해 편지가 열리면 JS가 보여 줍니다. (ADR-065, ADR-081)
 - 센터 정보는 공개 HTML에 정적으로 둡니다. 주소는 `<address>` 텍스트 한 곳이며, 복사할 값과 지도 링크의 검색어는 이 텍스트에서 읽습니다. 지도 링크의 주소(`href`)는 JS가 이 텍스트로 만듭니다.
 - 주소 복사는 `navigator.clipboard.writeText`만 씁니다. 실패하면(API가 없거나 거부됨) 실패 문구를 보여 줍니다. 복사 결과 문구는 `role="status"` 영역에 같은 방식으로 다시 읽히게 갱신합니다.
 - 지도 링크는 새 탭(`target="_blank"`)이며 `rel="noopener noreferrer"`를 붙입니다.
@@ -220,7 +221,7 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 
 ## 페이지 구조 테스트 (ADR-062)
 
-- `tests/page.test.mjs`가 `index.html`, `screens.js`, 설계 문서(02, 01)를 글자로 읽어 카드 순서와 속성, 편지 처음 상태(봉투, ADR-066), 이전 카드 버튼(ADR-065), 미리보기 이미지(ADR-064), 센터 카드(로고, 지도 버튼, 소개 문구 없음, ADR-068), 예약 달력(ADR-069)과 월 이동 점 버튼(ADR-077), 요일 색(ADR-079), CSS·JS 주소의 `?v=` 일치(ADR-078), 문구 일치, 메타, 접근성 규칙, 외부 주소 허용 목록, 금지 API, 크기 예산, 암호문 구조를 검사합니다. 브라우저 동작은 `/preview-check`가 맡습니다.
+- `tests/page.test.mjs`가 `index.html`, `screens.js`, 설계 문서(02, 01)를 글자로 읽어 카드 순서와 속성, 편지 처음 상태(봉투, ADR-066), 이전 카드 버튼(ADR-065, 카드마다 하나씩 ADR-081), 카드 묶음 구조(ADR-081, 예약 카드의 버튼 검사는 내용 프레임 `div.card.booking` 기준), 미리보기 이미지(ADR-064), 센터 카드(로고, 지도 버튼, 소개 문구 없음, ADR-068), 예약 달력(ADR-069)과 월 이동 점 버튼(ADR-077), 요일 색(ADR-079), CSS·JS 주소의 `?v=` 일치(ADR-078), 문구 일치, 메타, 접근성 규칙, 외부 주소 허용 목록, 금지 API, 크기 예산, 암호문 구조를 검사합니다. 브라우저 동작은 `/preview-check`가 맡습니다.
 
 ## 배포 때의 캐시 대책 (ADR-078)
 

@@ -2,8 +2,8 @@
 // (ADR-047, ADR-053, ADR-054, ADR-055, ADR-057, ADR-060, ADR-065, ADR-066).
 // 안내, 잠금, 오류, 선물 상자, 카드를 한 화면 단위로 바꿉니다. 이전 카드로는 바우처까지만 돌아갑니다. (ADR-065)
 
-import { burstConfetti } from './confetti.js?v=1.5.0';
-import { VOUCHER_KEYS } from './crypto.js?v=1.5.0';
+import { burstConfetti } from './confetti.js?v=1.6.0';
+import { VOUCHER_KEYS } from './crypto.js?v=1.6.0';
 
 const SCREEN_IDS = {
   intro: 'screen-intro',
@@ -39,7 +39,6 @@ const status = document.getElementById('status');
 const errorMessage = document.getElementById('error-message');
 const giftButton = document.getElementById('gift-button');
 const cardsScreen = document.getElementById(SCREEN_IDS.cards);
-const backButton = document.getElementById('back-button');
 
 const announceTimers = new WeakMap();
 let cardIndex = 0;
@@ -133,7 +132,7 @@ const envelope = document.getElementById('envelope');
 const sealButton = document.getElementById('seal-button');
 const letterBody = document.getElementById('letter-body');
 const letterHeading = document.getElementById('letter-heading');
-const letterNext = letterCard.querySelector('[data-next]');
+const letterActions = letterCard.querySelector('.card-actions'); // "다음" 버튼 구역. 편지가 열려야 보입니다.
 
 function prefersReducedMotion() {
   return Boolean(globalThis.matchMedia && globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -142,7 +141,7 @@ function prefersReducedMotion() {
 function finishEnvelope() {
   envelope.hidden = true;
   letterBody.hidden = false;
-  letterNext.hidden = false;
+  letterActions.hidden = false;
   letterCard.dataset.state = 'open';
   letterHeading.className = 'sr-only'; // 열린 뒤에는 보이지 않는 제목으로 남아 카드의 이름만 맡습니다. (ADR-074)
   if (!letterCard.hidden) letterBody.focus(); // 여는 도중 다른 카드로 갔다면 포커스를 옮기지 않습니다.
@@ -273,7 +272,6 @@ function showCard(index) {
   const cards = cardElements();
   cardIndex = Math.min(Math.max(index, 0), cards.length - 1);
   cards.forEach((card, i) => { card.hidden = i !== cardIndex; });
-  backButton.hidden = cardIndex === 0; // 바우처(첫 카드)에서는 돌아갈 곳이 없습니다. (ADR-065)
   cardShownAt = performance.now();
   cards[cardIndex].focus();
 }

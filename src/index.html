@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=1.5.0">
+  <link rel="stylesheet" href="css/style.css?v=1.6.0">
 
   <!-- JS가 꺼져 있으면 폼을 숨깁니다. 정답이 주소(URL)에 남지 않게 하기 위해서입니다. (ADR-051) -->
   <noscript><style>#app { display: none; }</style></noscript>
@@ -82,70 +82,91 @@
 
     <!-- 카드 화면: 카드를 한 장씩 넘깁니다. (ADR-047, ADR-053) -->
     <section id="screen-cards" class="screen" hidden>
-      <!-- 이전 카드 버튼 (ADR-065). 바우처 카드에서는 JS가 숨깁니다. "<" 그림은 장식입니다. -->
-      <button id="back-button" type="button" class="back-button" data-back hidden aria-label="이전 카드로">
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7"/></svg>
-      </button>
-
-      <article id="card-voucher" class="card voucher" data-card tabindex="-1" hidden aria-labelledby="voucher-title">
-        <img class="logo" src="img/logo.jpg" width="720" height="207" alt="리스파이어랩 로고">
-        <p id="voucher-label" class="voucher-label"></p>
-        <p id="voucher-badge" class="voucher-badge"></p>
-        <h1 id="voucher-title" class="voucher-title"></h1>
-        <p id="voucher-subtitle" class="voucher-subtitle"></p>
-        <dl class="voucher-rows">
-          <div class="voucher-row"><dt>Recipient</dt><dd id="voucher-recipient"></dd></div>
-          <div class="voucher-row"><dt>Occasion</dt><dd id="voucher-occasion"></dd></div>
-          <div class="voucher-row"><dt>Center</dt><dd id="voucher-center"></dd></div>
-          <div class="voucher-row"><dt>Care Type</dt><dd id="voucher-careType"></dd></div>
-        </dl>
-        <button type="button" class="button" data-next>다음</button>
+      <article id="card-voucher" class="card-stack" data-card tabindex="-1" hidden aria-labelledby="voucher-title">
+        <div class="card voucher">
+          <img class="logo" src="img/logo.jpg" width="720" height="207" alt="리스파이어랩 로고">
+          <p id="voucher-label" class="voucher-label"></p>
+          <p id="voucher-badge" class="voucher-badge"></p>
+          <h1 id="voucher-title" class="voucher-title"></h1>
+          <p id="voucher-subtitle" class="voucher-subtitle"></p>
+          <dl class="voucher-rows">
+            <div class="voucher-row"><dt>Recipient</dt><dd id="voucher-recipient"></dd></div>
+            <div class="voucher-row"><dt>Occasion</dt><dd id="voucher-occasion"></dd></div>
+            <div class="voucher-row"><dt>Center</dt><dd id="voucher-center"></dd></div>
+            <div class="voucher-row"><dt>Care Type</dt><dd id="voucher-careType"></dd></div>
+          </dl>
+        </div>
+        <div class="card-actions">
+          <button type="button" class="button" data-next>다음</button>
+        </div>
       </article>
 
       <!-- 편지 카드 (ADR-060, 봉투에서 시작 ADR-066). 봉투는 CSS 그림이며 장식입니다(aria-hidden).
            봉인 버튼을 누르면 봉투가 열리고 편지(#letter-body)가 나타납니다. 본문은 복호화한 값을 JS가 textContent로 채웁니다. -->
-      <article id="card-letter" class="card letter" data-card data-state="sealed" tabindex="-1" hidden aria-labelledby="letter-heading">
-        <h1 id="letter-heading" class="letter-heading">편지가 도착했습니다!</h1>
-        <div id="envelope" class="envelope">
-          <div class="envelope-back" aria-hidden="true"></div>
-          <div class="envelope-paper" aria-hidden="true"></div>
-          <div class="envelope-pocket" aria-hidden="true"></div>
-          <div class="envelope-flap" aria-hidden="true"></div>
-          <button id="seal-button" type="button" class="seal" aria-label="편지 봉투 열기" aria-controls="letter-body">열기</button>
+      <article id="card-letter" class="card-stack" data-card data-state="sealed" tabindex="-1" hidden aria-labelledby="letter-heading">
+        <!-- 이전 카드 버튼 (ADR-065, 카드와 함께 움직임 ADR-081). "<" 그림은 장식입니다. -->
+        <button type="button" class="back-button" data-back aria-label="이전 카드로">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7"/></svg>
+        </button>
+        <div class="card letter">
+          <h1 id="letter-heading" class="letter-heading">편지가 도착했습니다!</h1>
+          <div id="envelope" class="envelope">
+            <div class="envelope-back" aria-hidden="true"></div>
+            <div class="envelope-paper" aria-hidden="true"></div>
+            <div class="envelope-pocket" aria-hidden="true"></div>
+            <div class="envelope-flap" aria-hidden="true"></div>
+            <button id="seal-button" type="button" class="seal" aria-label="편지 봉투 열기" aria-controls="letter-body">열기</button>
+          </div>
+          <div id="letter-body" class="letter-body" tabindex="-1" hidden>
+            <p id="letter-salutation" class="letter-salutation"></p>
+            <div id="letter-paragraphs" class="letter-paragraphs"></div>
+            <p id="letter-closing" class="letter-closing"></p>
+          </div>
         </div>
-        <div id="letter-body" class="letter-body" tabindex="-1" hidden>
-          <p id="letter-salutation" class="letter-salutation"></p>
-          <div id="letter-paragraphs" class="letter-paragraphs"></div>
-          <p id="letter-closing" class="letter-closing"></p>
+        <div class="card-actions" hidden>
+          <button type="button" class="button" data-next>다음</button>
         </div>
-        <button type="button" class="button" data-next hidden>다음</button>
       </article>
 
       <!-- 센터 안내 카드 (ADR-060). 공개 정보라 HTML에 정적으로 둡니다. "다음" 버튼으로 예약 안내 카드로 넘어갑니다. (ADR-061)
            주소는 #center-address 한 곳에서만 관리합니다. 복사할 값과 지도 링크의 검색어는 이 텍스트에서 읽습니다. -->
-      <article id="card-center" class="card center" data-card tabindex="-1" hidden aria-labelledby="center-name">
-        <img class="logo" src="img/logo.jpg" width="720" height="207" alt="리스파이어랩 로고">
-        <h1 id="center-name" class="center-name">리스파이어랩 양재점</h1>
-        <p class="center-notice">100% 사전 예약제 1:1 프라이빗 케어 센터</p>
-        <address id="center-address" class="center-address">서울특별시 서초구 강남대로 224</address>
-        <p class="center-access">양재역 3·4번 출구 도보 3분</p>
-        <div class="center-actions">
-          <!-- 네이버 초록색 버튼이 위, 주소 복사하기가 아래입니다. 앞의 "N" 아이콘은 장식입니다. (ADR-068) -->
-          <a id="map-link" class="button button-naver" target="_blank" rel="noopener noreferrer"><svg class="naver-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect class="naver-mark-bg" width="24" height="24" rx="5"/><path class="naver-mark-n" d="M7 6h3.4l3.6 5.7V6h3v12h-3.4L10 12.3V18H7z"/></svg>네이버 지도로 보기</a>
-          <button id="copy-address" type="button" class="button button-sub">주소 복사하기</button>
+      <article id="card-center" class="card-stack" data-card tabindex="-1" hidden aria-labelledby="center-name">
+        <!-- 이전 카드 버튼 (ADR-065, 카드와 함께 움직임 ADR-081). "<" 그림은 장식입니다. -->
+        <button type="button" class="back-button" data-back aria-label="이전 카드로">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7"/></svg>
+        </button>
+        <div class="card center">
+          <img class="logo" src="img/logo.jpg" width="720" height="207" alt="리스파이어랩 로고">
+          <h1 id="center-name" class="center-name">리스파이어랩 양재점</h1>
+          <p class="center-notice">100% 사전 예약제 1:1 프라이빗 케어 센터</p>
+          <address id="center-address" class="center-address">서울특별시 서초구 강남대로 224</address>
+          <p class="center-access">양재역 3·4번 출구 도보 3분</p>
+          <div class="center-actions">
+            <!-- 네이버 초록색 버튼이 위, 주소 복사하기가 아래입니다. 앞의 "N" 아이콘은 장식입니다. (ADR-068) -->
+            <a id="map-link" class="button button-naver" target="_blank" rel="noopener noreferrer"><svg class="naver-mark" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect class="naver-mark-bg" width="24" height="24" rx="5"/><path class="naver-mark-n" d="M7 6h3.4l3.6 5.7V6h3v12h-3.4L10 12.3V18H7z"/></svg>네이버 지도로 보기</a>
+            <button id="copy-address" type="button" class="button button-sub">주소 복사하기</button>
+          </div>
+          <p id="copy-status" class="status" role="status" aria-live="polite"></p>
         </div>
-        <p id="copy-status" class="status" role="status" aria-live="polite"></p>
-        <button type="button" class="button" data-next>다음</button>
+        <div class="card-actions">
+          <button type="button" class="button" data-next>다음</button>
+        </div>
       </article>
 
       <!-- 예약 안내 카드 (ADR-061). 마지막 카드이며 입력·선택이 없고, 버튼은 달력 월 이동 점뿐입니다. (ADR-077) 문구는 design/02 "예약 안내 문구"가 기준입니다.
            💌는 장식이므로 스크린리더가 읽지 않게 합니다. -->
-      <article id="card-booking" class="card booking" data-card tabindex="-1" hidden aria-labelledby="booking-message">
-        <p class="booking-label">첫 예약 안내</p>
-        <h1 id="booking-message" class="booking-message">첫 예약은 내가 해줄게!<br>가능한 날짜를 나에게 말해줘!&nbsp;<span aria-hidden="true">💌</span></h1>
-        <!-- 10월·11월 달력 (ADR-069). 보기만 하는 달력이라 날짜 선택과 입력이 없습니다. JS가 채웁니다. 옆으로 밀거나 아래 점(월 이동 버튼)을 눌러 넘깁니다. (ADR-077) -->
-        <div id="calendar" class="calendar" role="region" aria-label="10월과 11월 달력" tabindex="0"></div>
-        <div class="calendar-dots" role="group" aria-label="달력 월 이동"><button type="button" class="calendar-dot is-current" aria-label="10월 달력 보기" aria-current="true"></button><button type="button" class="calendar-dot" aria-label="11월 달력 보기"></button></div>
+      <article id="card-booking" class="card-stack" data-card tabindex="-1" hidden aria-labelledby="booking-message">
+        <!-- 이전 카드 버튼 (ADR-065, 카드와 함께 움직임 ADR-081). "<" 그림은 장식입니다. -->
+        <button type="button" class="back-button" data-back aria-label="이전 카드로">
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7"/></svg>
+        </button>
+        <div class="card booking">
+          <p class="booking-label">첫 예약 안내</p>
+          <h1 id="booking-message" class="booking-message">첫 예약은 내가 해줄게!<br>가능한 날짜를 나에게 말해줘!&nbsp;<span aria-hidden="true">💌</span></h1>
+          <!-- 10월·11월 달력 (ADR-069). 보기만 하는 달력이라 날짜 선택과 입력이 없습니다. JS가 채웁니다. 옆으로 밀거나 아래 점(월 이동 버튼)을 눌러 넘깁니다. (ADR-077) -->
+          <div id="calendar" class="calendar" role="region" aria-label="10월과 11월 달력" tabindex="0"></div>
+          <div class="calendar-dots" role="group" aria-label="달력 월 이동"><button type="button" class="calendar-dot is-current" aria-label="10월 달력 보기" aria-current="true"></button><button type="button" class="calendar-dot" aria-label="11월 달력 보기"></button></div>
+        </div>
       </article>
     </section>
   </main>
@@ -153,6 +174,6 @@
   <!-- 폭죽용 캔버스 (ADR-055). 장식이므로 스크린리더에는 숨기고, 눌러도 아래로 통과합니다. -->
   <canvas id="confetti" class="confetti" aria-hidden="true" hidden></canvas>
 
-  <script type="module" src="js/app.js?v=1.5.0"></script>
+  <script type="module" src="js/app.js?v=1.6.0"></script>
 </body>
 </html>
