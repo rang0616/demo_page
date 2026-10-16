@@ -53,12 +53,13 @@ src/                    # 배포 폴더 (GitHub Actions로 배포, ADR-050)
   css/style.css          # 스타일
   js/normalize.js        # 정답 정규화 (순수 함수, 도구와 공유, ADR-039)
   js/crypto.js           # 키 파생과 복호화 (ADR-040)
-  js/screens.js          # 화면과 카드 전환, 바우처·편지 표시, 편지 접기, 센터 주소 복사 (ADR-041, ADR-047, ADR-060, ADR-061, ADR-063)
+  js/screens.js          # 화면과 카드 전환(이전 카드 포함), 바우처·편지 표시, 편지 봉투 열기, 센터 주소 복사 (ADR-041, ADR-047, ADR-060, ADR-061, ADR-065, ADR-066)
   js/sound.js            # 효과음 합성: 뾱(버튼), 뿅(상자), 짜잔 (ADR-027, ADR-055, ADR-058)
   js/confetti.js         # 폭죽 (캔버스, ADR-055)
   js/app.js              # 시작점: 잠금 해제 흐름과 연결 (ADR-041)
   data/letter.enc.json   # 암호화된 본문 (생성 결과물)
   img/logo.jpg           # 센터 로고 (720×207 JPEG, 40KB 이하, ADR-048, ADR-056)
+  img/og.jpg             # 링크 미리보기용 선물 상자 그림 (800×400 JPEG, 40KB 이하, ADR-064)
 tools/encrypt.mjs        # 암호문 생성 (일회성, 배포 파일 아님, ADR-038)
 tests/                   # 정규화·암호 왕복·페이지 구조 테스트 (배포 안 함, ADR-039, ADR-049, ADR-062)
 tools/voucher.json       # 바우처 8개 값 (02 표와 같아야 함, ADR-042)
@@ -74,7 +75,8 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 ## 카카오톡 미리보기와 메타
 
 - 링크 미리보기(og:title, og:description)는 중립 문구를 씁니다. 제목은 "선물이 도착했어요", 설명은 "열어 보려면 링크를 눌러 주세요"입니다. 수신자 이름을 넣지 않습니다. (ADR-021)
-- og:image와 favicon 파일은 두지 않습니다. 브라우저의 `/favicon.ico` 404 응답은 허용합니다. `<meta name="robots" content="noindex">`를 넣습니다. (ADR-030)
+- og:image는 선물 상자 그림 `img/og.jpg`(800×400)이며 절대 주소(`https://rang0616.github.io/demo_page/img/og.jpg`)로 씁니다. 카카오톡이 로고를 대신 고르지 않게 하기 위해서입니다. `og:image:width`와 `og:image:height`를 함께 둡니다. 카카오톡이 이전 미리보기를 기억하면 카카오 공유 디버거에서 초기화합니다. (ADR-064)
+- favicon 파일은 두지 않습니다. 브라우저의 `/favicon.ico` 404 응답은 허용합니다. `<meta name="robots" content="noindex">`를 넣습니다. (ADR-030)
 
 ## 허용 외부 리소스
 
@@ -82,6 +84,7 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 |--------|------|
 | `cdn.jsdelivr.net` | Pretendard 본문 글꼴 (버전 고정) |
 | `fonts.googleapis.com`, `fonts.gstatic.com` | 나눔손글씨 펜 편지 글꼴 (제공 확인 완료) |
+| `rang0616.github.io` | 링크 미리보기 이미지(`og:image`)의 절대 주소에만 씁니다. 이 사이트 자신입니다. (ADR-064) |
 | `map.naver.com` | **이동 링크만** (센터 주소 검색). 리소스는 불러오지 않습니다. 새 탭, `rel="noopener noreferrer"` (ADR-012, ADR-060) |
 
 이 목록에 없는 호스트는 추가하기 전에 `06-decisions.md`에 먼저 기록합니다.
@@ -140,11 +143,11 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 
 ## 화면 구조와 전이 (ADR-041)
 
-- 안내, 잠금, 상자, 카드들은 한 화면 단위로 바꿉니다. 뒤로 가기는 없습니다. (ADR-047, ADR-057)
+- 안내, 잠금, 상자, 카드들은 한 화면 단위로 바꿉니다. 카드에서는 바우처 다음 카드부터 이전 카드로 돌아갈 수 있고, 그 앞의 화면으로는 돌아가지 않습니다. (ADR-047, ADR-057, ADR-065)
 - 상태 흐름: `intro → locked → decrypting → locked(틀림·네트워크 오류, 입력 유지) | error(데이터·버전)`, `decrypting → gift → opening → cards`. (ADR-053)
 - 잠금 해제 후에는 카드를 한 장씩 넘깁니다: 효과음과 상자 연출 → 바우처 → 편지 → 센터 안내 → 예약 문구. 카드는 "다음" 버튼으로만 넘어갑니다. (ADR-047, ADR-055)
 - 화면 전환 후 새 섹션 제목에 `tabindex="-1"`로 포커스를 옮깁니다. 대기·틀림 문구는 `role="status"`, 오류 화면은 `role="alert"`로 알립니다. (ADR-051)
-- 모듈 역할: `normalize.js`(순수 함수), `crypto.js`(키 파생, 복호화, 오류 구분), `screens.js`(화면과 카드 표시, 이동, 포커스, 바우처·편지 채우기, 편지 접기, 센터 주소 복사와 지도 링크), `sound.js`(효과음 합성), `confetti.js`(폭죽), `app.js`(흐름 연결).
+- 모듈 역할: `normalize.js`(순수 함수), `crypto.js`(키 파생, 복호화, 오류 구분), `screens.js`(화면과 카드 표시, 이동, 포커스, 바우처·편지 채우기, 편지 봉투 열기, 이전 카드, 센터 주소 복사와 지도 링크), `sound.js`(효과음 합성), `confetti.js`(폭죽), `app.js`(흐름 연결).
 
 ## 보조 규칙 (ADR-042, ADR-043)
 
@@ -187,7 +190,7 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 - 시작 버튼은 HTML에서 비활성으로 시작해 JS가 연결된 뒤 활성화합니다. 잠금 화면은 HTML에서 `hidden`으로 시작합니다.
 - 화면 목록(`SCREEN_IDS`)에 `intro`를 추가합니다. 잠금 화면으로 넘어가면 잠금 화면 제목(`#lock-heading`, 안내와 질문 전체)으로 포커스를 옮깁니다. (ADR-059)
 - 첫 로드에서는 포커스를 옮기지 않습니다. 안내 제목도 다른 화면처럼 `<h1 tabindex="-1">`로 둡니다. 스크린리더는 제목부터 읽습니다.
-- 브라우저 히스토리를 쓰지 않습니다(`history.pushState` 금지). 잠금 화면에서 뒤로 가기를 누르면 페이지를 떠납니다.
+- 브라우저 히스토리를 쓰지 않습니다(`history.pushState` 금지). 브라우저의 뒤로 가기를 누르면 카드와 상관없이 페이지를 떠납니다. 화면 안의 "<" 버튼과는 별개입니다. (ADR-065)
 - `<title>`은 화면마다 바꾸지 않고 "선물이 도착했어요"로 고정합니다. (ADR-030)
 - 안내 화면 섹션은 `<main id="app">` 안에 둡니다. JS가 꺼져 있으면 기존 규칙(`#app` 숨김)으로 숨겨지고 noscript 안내만 보입니다.
 - JS 모듈 로드가 실패하면 비활성 버튼만 남고 안내는 없습니다. 잠금 폼과 같은 한계이며 받아들입니다.
@@ -199,7 +202,8 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 
 ## 편지와 센터 안내 구현 (ADR-060)
 
-- 편지 접기 버튼은 `aria-expanded`와 `aria-controls`를 갖고, 접으면 본문 영역에 `hidden`을 붙입니다. 처음 상태는 접힘이라 HTML에 `aria-expanded="false"`, 본문 영역 `hidden`, 라벨 "펼쳐보기"로 둡니다. (ADR-063)
+- 편지 카드는 봉투(`#envelope`)와 편지 본문(`#letter-body`)을 함께 갖고, 카드의 `data-state`가 `sealed → opening → open`으로 바뀝니다. 처음에는 봉투만 보이고 본문(`hidden`)과 "다음" 버튼(`hidden`)은 숨겨져 있습니다. 봉인 버튼(`#seal-button`)을 누르면 `opening`(덮개와 종이 움직임, CSS 전환)이 되고, 약 1.4초 뒤 봉투를 숨기고 본문과 "다음" 버튼을 보여 주며 `open`이 됩니다. 이때 포커스는 본문(`tabindex="-1"`)으로 옮깁니다. 모션 감소 설정이면 `opening`을 거치지 않고 바로 `open`입니다. 카드의 이름은 보이지 않는 제목 `#letter-heading`(`h1`)이 맡습니다. (ADR-066)
+- 이전 카드 버튼(`#back-button`)은 카드 화면 안에 하나만 두고, 현재 카드가 첫 카드가 아닐 때만 보입니다. 누르면 한 장 앞 카드를 보여 줍니다. (ADR-065)
 - 센터 정보는 공개 HTML에 정적으로 둡니다. 주소는 `<address>` 텍스트 한 곳이며, 복사할 값과 지도 링크의 검색어는 이 텍스트에서 읽습니다. 지도 링크의 주소(`href`)는 JS가 이 텍스트로 만듭니다.
 - 주소 복사는 `navigator.clipboard.writeText`만 씁니다. 실패하면(API가 없거나 거부됨) 실패 문구를 보여 줍니다. 복사 결과 문구는 `role="status"` 영역에 같은 방식으로 다시 읽히게 갱신합니다.
 - 지도 링크는 새 탭(`target="_blank"`)이며 `rel="noopener noreferrer"`를 붙입니다.
@@ -211,4 +215,4 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 
 ## 페이지 구조 테스트 (ADR-062)
 
-- `tests/page.test.mjs`가 `index.html`, `screens.js`, 설계 문서(02, 01)를 글자로 읽어 카드 순서와 속성, 편지 처음 상태(접힘, ADR-063), 문구 일치, 메타, 접근성 규칙, 외부 주소 허용 목록, 금지 API, 크기 예산, 암호문 구조를 검사합니다. 브라우저 동작은 `/preview-check`가 맡습니다.
+- `tests/page.test.mjs`가 `index.html`, `screens.js`, 설계 문서(02, 01)를 글자로 읽어 카드 순서와 속성, 편지 처음 상태(봉투, ADR-066), 이전 카드 버튼(ADR-065), 미리보기 이미지(ADR-064), 문구 일치, 메타, 접근성 규칙, 외부 주소 허용 목록, 금지 API, 크기 예산, 암호문 구조를 검사합니다. 브라우저 동작은 `/preview-check`가 맡습니다.

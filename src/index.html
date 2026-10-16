@@ -10,6 +10,10 @@
   <meta property="og:type" content="website">
   <meta property="og:title" content="선물이 도착했어요">
   <meta property="og:description" content="열어 보려면 링크를 눌러 주세요">
+  <!-- 미리보기 이미지는 선물 상자 그림입니다. 없으면 카카오톡이 로고를 고릅니다. 절대 주소여야 합니다. (ADR-064) -->
+  <meta property="og:image" content="https://rang0616.github.io/demo_page/img/og.jpg">
+  <meta property="og:image:width" content="800">
+  <meta property="og:image:height" content="400">
 
   <!-- 허용 외부 호스트: cdn.jsdelivr.net, fonts.googleapis.com, fonts.gstatic.com (design/05) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -78,6 +82,11 @@
 
     <!-- 카드 화면: 카드를 한 장씩 넘깁니다. (ADR-047, ADR-053) -->
     <section id="screen-cards" class="screen" hidden>
+      <!-- 이전 카드 버튼 (ADR-065). 바우처 카드에서는 JS가 숨깁니다. "<" 그림은 장식입니다. -->
+      <button id="back-button" type="button" class="back-button" data-back hidden aria-label="이전 카드로">
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+
       <article id="card-voucher" class="card voucher" data-card tabindex="-1" hidden aria-labelledby="voucher-title">
         <img class="logo" src="img/logo.jpg" width="720" height="207" alt="리스파이어랩 로고">
         <p id="voucher-label" class="voucher-label"></p>
@@ -93,17 +102,23 @@
         <button type="button" class="button" data-next>다음</button>
       </article>
 
-      <!-- 편지 카드 (ADR-060, 처음엔 접힘 ADR-063). 본문은 복호화한 값을 JS가 textContent로 채웁니다. -->
-      <article id="card-letter" class="card letter" data-card tabindex="-1" hidden aria-labelledby="letter-salutation">
-        <div class="letter-head">
-          <h1 id="letter-salutation" class="letter-salutation"></h1>
-          <button id="letter-toggle" type="button" class="toggle" aria-expanded="false" aria-controls="letter-body">펼쳐보기</button>
+      <!-- 편지 카드 (ADR-060, 봉투에서 시작 ADR-066). 봉투는 CSS 그림이며 장식입니다(aria-hidden).
+           봉인 버튼을 누르면 봉투가 열리고 편지(#letter-body)가 나타납니다. 본문은 복호화한 값을 JS가 textContent로 채웁니다. -->
+      <article id="card-letter" class="card letter" data-card data-state="sealed" tabindex="-1" hidden aria-labelledby="letter-heading">
+        <h1 id="letter-heading" class="sr-only">편지</h1>
+        <div id="envelope" class="envelope">
+          <div class="envelope-back" aria-hidden="true"></div>
+          <div class="envelope-paper" aria-hidden="true"></div>
+          <div class="envelope-pocket" aria-hidden="true"></div>
+          <div class="envelope-flap" aria-hidden="true"></div>
+          <button id="seal-button" type="button" class="seal" aria-label="편지 봉투 열기" aria-controls="letter-body">열기</button>
         </div>
-        <div id="letter-body" class="letter-body" hidden>
+        <div id="letter-body" class="letter-body" tabindex="-1" hidden>
+          <p id="letter-salutation" class="letter-salutation"></p>
           <div id="letter-paragraphs" class="letter-paragraphs"></div>
           <p id="letter-closing" class="letter-closing"></p>
         </div>
-        <button type="button" class="button" data-next>다음</button>
+        <button type="button" class="button" data-next hidden>다음</button>
       </article>
 
       <!-- 센터 안내 카드 (ADR-060). 공개 정보라 HTML에 정적으로 둡니다. "다음" 버튼으로 예약 안내 카드로 넘어갑니다. (ADR-061)

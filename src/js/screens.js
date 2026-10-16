@@ -1,6 +1,6 @@
-// 화면과 카드 전환, 상태 문구, 포커스 이동, 바우처·편지 표시, 편지 접기, 센터 주소 복사와 지도 링크
-// (ADR-047, ADR-053, ADR-054, ADR-055, ADR-057, ADR-060).
-// 안내, 잠금, 오류, 선물 상자, 카드를 한 화면 단위로 바꿉니다. 뒤로 가기는 없습니다.
+// 화면과 카드 전환(이전 카드 포함), 상태 문구, 포커스 이동, 바우처·편지 표시, 편지 봉투 열기, 센터 주소 복사와 지도 링크
+// (ADR-047, ADR-053, ADR-054, ADR-055, ADR-057, ADR-060, ADR-065, ADR-066).
+// 안내, 잠금, 오류, 선물 상자, 카드를 한 화면 단위로 바꿉니다. 이전 카드로는 바우처까지만 돌아갑니다. (ADR-065)
 
 import { burstConfetti } from './confetti.js';
 import { VOUCHER_KEYS } from './crypto.js';
@@ -18,6 +18,7 @@ const CARD_IDS = ['card-voucher', 'card-letter', 'card-center', 'card-booking'];
 const NAVER_MAP_SEARCH = 'https://map.naver.com/p/search/';
 // 센터 카드의 안내 문구 (design/02 연출 문구). 시스템 문구라 반말입니다. (ADR-029)
 const COPY_MESSAGE = { done: '주소를 복사했어!', failed: '복사가 안 됐어. 주소를 길게 눌러서 복사해 줘.' };
+const ENVELOPE_OPEN_MS = 1400; // 덮개가 열리고 종이가 올라오는 연출 시간. style.css의 .envelope 전환(0.35초 지연 + 0.8초)과 짝입니다. (ADR-066)
 const CARD_GUARD_MS = 400; // 카드가 나타난 직후의 "다음" 탭은 무시합니다. (ADR-054) 등장 연출(0.7초)의 "밤!" 지점 뒤까지 막습니다.
 
 const startButton = document.getElementById('start-button');
@@ -28,6 +29,7 @@ const status = document.getElementById('status');
 const errorMessage = document.getElementById('error-message');
 const giftButton = document.getElementById('gift-button');
 const cardsScreen = document.getElementById(SCREEN_IDS.cards);
+const backButton = document.getElementById('back-button');
 
 const announceTimers = new WeakMap();
 let cardIndex = 0;
@@ -114,14 +116,34 @@ export function renderLetter(letter) {
   }));
 }
 
-// 편지 접기/펼치기: 접으면 호칭만 남고 문단과 맺음말이 숨겨집니다. 처음 상태는 접힘입니다. (ADR-060, ADR-063)
-const letterToggle = document.getElementById('letter-toggle');
+// 편지 봉투: 봉인 버튼을 누르면 덮개가 열리고 종이가 올라온 뒤, 봉투를 숨기고 편지와 "다음" 버튼을 보여 줍니다.
+// 모션 감소 설정이면 연출 없이 바로 보여 줍니다. 한 번 연 편지는 다시 닫지 않습니다. (ADR-066)
+const letterCard = document.getElementById('card-letter');
+const envelope = document.getElementById('envelope');
+const sealButton = document.getElementById('seal-button');
 const letterBody = document.getElementById('letter-body');
-letterToggle.addEventListener('click', () => {
-  const wasExpanded = letterToggle.getAttribute('aria-expanded') === 'true';
-  letterBody.hidden = wasExpanded;
-  letterToggle.setAttribute('aria-expanded', String(!wasExpanded));
-  letterToggle.textContent = wasExpanded ? '펼쳐보기' : '접어두기';
+const letterNext = letterCard.querySelector('[data-next]');
+
+function prefersReducedMotion() {
+  return Boolean(globalThis.matchMedia && globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+
+function finishEnvelope() {
+  envelope.hidden = true;
+  letterBody.hidden = false;
+  letterNext.hidden = false;
+  letterCard.dataset.state = 'open';
+  letterBody.focus();
+}
+
+sealButton.addEventListener('click', () => {
+  if (letterCard.dataset.state !== 'sealed') return;
+  if (prefersReducedMotion()) {
+    finishEnvelope();
+    return;
+  }
+  letterCard.dataset.state = 'opening';
+  setTimeout(finishEnvelope, ENVELOPE_OPEN_MS);
 });
 
 // 센터 안내: 주소는 화면의 주소 텍스트 한 곳에서만 읽습니다. 복사할 값과 지도 링크가 모두 여기서 나옵니다. (ADR-060)
@@ -165,6 +187,7 @@ function showCard(index) {
   const cards = cardElements();
   cardIndex = Math.min(Math.max(index, 0), cards.length - 1);
   cards.forEach((card, i) => { card.hidden = i !== cardIndex; });
+  backButton.hidden = cardIndex === 0; // 바우처(첫 카드)에서는 돌아갈 곳이 없습니다. (ADR-065)
   cardShownAt = performance.now();
   cards[cardIndex].focus();
 }
@@ -175,11 +198,15 @@ export function startCards() {
   showCard(0);
 }
 
-// 카드는 "다음" 버튼으로만 넘어갑니다. 카드의 빈 곳을 눌러도 넘어가지 않습니다. (ADR-055)
+// 카드는 "다음" 버튼으로 넘어가고, 왼쪽 위의 "<" 버튼으로 이전 카드(바우처까지)로 돌아갑니다.
+// 카드의 빈 곳을 눌러도 넘어가지 않습니다. (ADR-055, ADR-065)
 // 카드가 나타난 직후(0.4초)의 탭은 무시해, 연타로 카드를 건너뛰지 않게 합니다. (ADR-054)
-// 마지막 카드에는 "다음" 버튼이 없습니다. 뒤로 가기는 없습니다.
+// 마지막 카드에는 "다음" 버튼이 없습니다.
 cardsScreen.addEventListener('click', (event) => {
-  if (!event.target.closest('[data-next]')) return;
+  const next = event.target.closest('[data-next]');
+  const back = event.target.closest('[data-back]');
+  if (!next && !back) return;
   if (performance.now() - cardShownAt < CARD_GUARD_MS) return;
-  if (cardIndex < cardElements().length - 1) showCard(cardIndex + 1);
+  if (next && cardIndex < cardElements().length - 1) showCard(cardIndex + 1);
+  if (back && cardIndex > 0) showCard(cardIndex - 1);
 });

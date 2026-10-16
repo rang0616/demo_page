@@ -63,14 +63,29 @@ test('예약 안내 카드에는 버튼, 링크, 입력창이 없다 (ADR-011, A
   }
 });
 
-test('편지는 접힌 상태로 시작한다: 본문 hidden, aria-expanded=false, 라벨 "펼쳐보기" (ADR-063)', () => {
+test('편지는 봉투로 시작한다: 본문과 "다음" 버튼 hidden, 봉인 버튼 이름, 접기 버튼 없음 (ADR-066)', () => {
   const letter = article('card-letter');
-  const toggle = letter.match(/<button id="letter-toggle"([^>]*)>\s*([^<]*?)\s*<\/button>/);
-  assert.ok(toggle, '편지 접기 버튼이 없습니다.');
-  assert.ok(toggle[1].includes('aria-expanded="false"') && toggle[1].includes('aria-controls="letter-body"'));
-  assert.equal(toggle[2], '펼쳐보기');
+  assert.match(letter.match(/<article[^>]*>/)[0], /data-state="sealed"/);
+  assert.match(letter, /<h1 id="letter-heading" class="sr-only">편지<\/h1>/);
+  const seal = letter.match(/<button id="seal-button"([^>]*)>\s*([^<]*?)\s*<\/button>/);
+  assert.ok(seal, '봉인 버튼이 없습니다.');
+  assert.ok(seal[1].includes('aria-label="편지 봉투 열기"') && seal[1].includes('aria-controls="letter-body"'));
+  assert.equal(seal[2], '열기');
   assert.match(letter, /<div id="letter-body"[^>]*\shidden[\s>]/);
-  assert.ok(letter.includes('data-next'), '접힌 상태에서도 "다음" 버튼이 보여야 합니다.');
+  assert.match(letter, /<button[^>]*data-next[^>]*\shidden[^>]*>|<button[^>]*\shidden[^>]*data-next[^>]*>/, '"다음" 버튼은 편지가 열릴 때까지 숨겨져야 합니다.');
+  assert.ok(!letter.includes('letter-toggle'), '접기/펼치기 버튼은 ADR-066에서 없앴습니다.');
+  const decorative = letter.match(/<div class="envelope-(back|paper|pocket|flap)" aria-hidden="true">/g) || [];
+  assert.equal(decorative.length, 4, '봉투 그림 4조각은 aria-hidden이어야 합니다.');
+});
+
+test('이전 카드 버튼이 카드 화면에 하나 있고 이름이 있다. 바우처에서는 JS가 숨긴다 (ADR-065)', () => {
+  const buttons = html.match(/<button[^>]*data-back[^>]*>/g) || [];
+  assert.equal(buttons.length, 1);
+  assert.ok(buttons[0].includes('id="back-button"') && buttons[0].includes('aria-label="이전 카드로"') && buttons[0].includes('hidden'));
+  assert.match(html, /<button id="back-button"[\s\S]*?<svg[^>]*aria-hidden="true"/, '"<" 그림은 장식(aria-hidden)이어야 합니다.');
+  assert.ok(html.indexOf('id="back-button"') > html.indexOf('id="screen-cards"'), '이전 카드 버튼은 카드 화면 안에 있어야 합니다.');
+  assert.match(screens, /backButton\.hidden = cardIndex === 0/, '바우처(첫 카드)에서 이전 카드 버튼을 숨기는 코드가 없습니다.');
+  assert.match(screens, /cardIndex > 0\) showCard\(cardIndex - 1\)/, '이전 카드로는 첫 카드보다 앞으로 가지 않아야 합니다.');
 });
 
 test('예약 안내 문구가 02-content.md의 기준 문구와 같다', () => {
@@ -93,17 +108,20 @@ test('안내 화면 제목의 이모지 둘도 aria-hidden이다 (ADR-058)', () 
 
 test('화면에 쓰는 주요 문구가 설계 문서(02, 01)에 있다', () => {
   const docs = content + flow;
-  for (const phrase of ['지금 바로 확인하기', '열어 보기', '다음', '접어두기', '펼쳐보기', '주소 복사하기', '네이버 지도로 보기', '주소를 복사했어!', '복사가 안 됐어. 주소를 길게 눌러서 복사해 줘.', '신원을 확인하겠습니다.', '아래 질문에 답을 해주세요.', '휘와 윰댕이 사귄 날은?']) {
+  for (const phrase of ['지금 바로 확인하기', '열어 보기', '다음', '| 열기 (접근성 이름: 편지 봉투 열기)', '접근성 이름만 "이전 카드로"', '주소 복사하기', '네이버 지도로 보기', '주소를 복사했어!', '복사가 안 됐어. 주소를 길게 눌러서 복사해 줘.', '신원을 확인하겠습니다.', '아래 질문에 답을 해주세요.', '휘와 윰댕이 사귄 날은?']) {
     assert.ok(docs.includes(phrase), `설계 문서에 "${phrase}"가 없습니다.`);
   }
 });
 
-test('메타 정보: 중립 제목과 설명, noindex, 미리보기 이미지·파비콘 없음 (ADR-021, ADR-030)', () => {
+test('메타 정보: 중립 제목과 설명, noindex, 미리보기 이미지는 선물 그림, 파비콘 없음 (ADR-021, ADR-030, ADR-064)', async () => {
   assert.match(html, /<title>선물이 도착했어요<\/title>/);
   assert.match(html, /<meta property="og:title" content="선물이 도착했어요">/);
   assert.match(html, /<meta property="og:description" content="열어 보려면 링크를 눌러 주세요">/);
   assert.match(html, /<meta name="robots" content="noindex">/);
-  assert.ok(!/og:image/.test(html), 'og:image가 있습니다.');
+  assert.match(html, /<meta property="og:image" content="https:\/\/rang0616\.github\.io\/demo_page\/img\/og\.jpg">/);
+  assert.match(html, /<meta property="og:image:width" content="800">/);
+  assert.match(html, /<meta property="og:image:height" content="400">/);
+  assert.ok((await stat(join(ROOT, 'src/img/og.jpg'))).size <= 40 * 1024, '미리보기 이미지가 40KB를 넘었습니다.');
   assert.ok(!/rel="(shortcut )?icon"/.test(html), '파비콘 링크가 있습니다.');
 });
 
@@ -143,7 +161,7 @@ test('입력창은 aria-labelledby로 질문만 가리킨다 (ADR-059)', () => {
 });
 
 test('외부 주소는 허용 목록 호스트뿐이다 (design/05 허용 외부 리소스)', async () => {
-  const allowed = new Set(['cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com', 'map.naver.com']);
+  const allowed = new Set(['cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com', 'map.naver.com', 'rang0616.github.io']);
   const files = ['src/index.html', 'src/css/style.css', ...(await readdir(join(ROOT, 'src/js'))).map((f) => `src/js/${f}`)];
   for (const file of files) {
     for (const [url] of (await read(file)).matchAll(/https?:\/\/[^\s"')<>]+/g)) {
