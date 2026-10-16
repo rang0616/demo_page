@@ -541,3 +541,22 @@ test('프레임이 없어야 하는 블록에는 바탕·그림자가 없고, �
   assert.match(css, /\.gift-ring-2 \{[^}]*0\.45s/s);
   assert.match(css, /\.gift-ring-3 \{[^}]*0\.6s/s);
 });
+
+test('답란은 포커스 때 네모 윤곽 없이 밑줄이 진해지고 굵어진다 (ADR-091)', () => {
+  const focus = css.match(/\.field:focus-visible \{([^}]*)\}/)?.[1] ?? '';
+  assert.match(focus, /border-bottom: 3px solid var\(--text\);/, '포커스 밑줄은 --text 색 3px입니다.');
+  assert.match(focus, /padding-bottom: 5px;/, '밑줄이 1px 굵어진 만큼 아래 여백을 줄여 높이가 변하지 않아야 합니다.');
+  assert.match(focus, /outline: 2px solid transparent;/, '보이는 윤곽은 없고 투명 윤곽만 둡니다(고대비 모드용).');
+  assert.ok(!/outline: 3px solid var\(--text\)/.test(focus), '네모 윤곽이 없어야 합니다.');
+  assert.ok(!/\.field:focus(?!-visible)/.test(css), '다른 포커스 규칙이 덮어쓰면 안 됩니다.');
+  const field = css.match(/\n\.field \{([^}]*)\}/)[1];
+  assert.match(field, /padding: 6px 8px;/);
+  assert.match(field, /border-bottom: 2px solid var\(--accent-border\);/);
+});
+
+test('꽃가루는 약 200개이다 (ADR-092)', async () => {
+  const confetti = await read('src/js/confetti.js');
+  assert.match(confetti, /const COUNT = 200;/);
+  assert.match(confetti, /Array\.from\(\{ length: COUNT \}/, '꽃가루 수는 COUNT로 만들어야 합니다.');
+  assert.match(confetti, /const DURATION_MS = 1800;/, '지속 시간은 그대로 1.8초입니다.');
+});

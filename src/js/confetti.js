@@ -3,7 +3,7 @@
 // 모션 감소 설정에서는 호출하지 않습니다. (호출하는 쪽에서 막습니다)
 
 const COLORS = ['#F4A7A7', '#F8BDBD', '#BFD8C8', '#C4757D']; // 디자인 토큰 색 (design/04)
-const COUNT = 80;
+const COUNT = 200; // 양은 이 값 하나로 정합니다. (ADR-092, 처음 80)
 const DURATION_MS = 1800;
 const FADE_MS = 400;
 const GRAVITY = 0.28; // 프레임(약 16.7ms)당 가속

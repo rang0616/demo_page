@@ -150,9 +150,12 @@ body {
   border-radius: 0;
 }
 
+/* 포커스: 네모 윤곽 없이 밑줄이 진해지고 굵어집니다. 높이는 그대로(밑줄 +1px, 아래 여백 -1px).
+   투명 윤곽은 고대비 모드(forced-colors)에서 시스템이 그려 주게 하려고 남깁니다. (ADR-091) */
 .field:focus-visible {
-  outline: 3px solid var(--text);
-  outline-offset: 2px;
+  padding-bottom: 5px;
+  border-bottom: 3px solid var(--text);
+  outline: 2px solid transparent;
 }
 
 .button {
