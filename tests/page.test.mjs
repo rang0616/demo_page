@@ -109,6 +109,39 @@ test('맺음말은 암호문을 다시 만들기 전까지 서명으로 대신 �
   assert.match(screens, /textContent = CLOSING_OVERRIDE \?\? letter\[letter\.length - 1\]/);
 });
 
+test('바우처의 "20회"는 강조 요소로 나뉘어 채워진다. 값은 바꾸지 않는다 (ADR-085)', async () => {
+  const { splitAccent } = await import(join(ROOT, 'src/js/accent.js'));
+  const joined = (pieces) => pieces.map((p) => p.text).join('');
+  const cases = ['', 'A', '20회', 'x20회y20회', '(20회)', '❤️20회✨', '패시브 스트레칭 20회 회원권', '1:1 맞춤 컨디셔닝 (20회)', 'SPECIAL 20 SESSIONS'];
+  for (const value of cases) {
+    const pieces = splitAccent(value, '20회');
+    assert.equal(joined(pieces), value, `이어 붙인 글이 원래 값과 같아야 합니다: ${JSON.stringify(value)}`);
+    assert.equal(pieces.filter((p) => p.accent).length, value.split('20회').length - 1);
+    assert.ok(pieces.filter((p) => p.accent).every((p) => p.text === '20회'));
+  }
+  assert.deepEqual(splitAccent('패시브 스트레칭 20회 회원권', '20회'), [{ text: '패시브 스트레칭 ', accent: false }, { text: '20회', accent: true }, { text: ' 회원권', accent: false }]);
+  assert.deepEqual(splitAccent('(20회)', '20회'), [{ text: '(', accent: false }, { text: '20회', accent: true }, { text: ')', accent: false }]);
+  assert.deepEqual(splitAccent('', '20회'), [{ text: '', accent: false }]);
+  assert.deepEqual(splitAccent('SPECIAL 20 SESSIONS', '20회').filter((p) => p.accent), [], '영문 배지는 강조 대상이 아닙니다.');
+  assert.equal(splitAccent(123, '20회')[0].text, '123');
+  assert.match(screens, /const VOUCHER_ACCENT = '20회';/);
+  assert.match(screens, /splitAccent\(voucher\[key\], VOUCHER_ACCENT\)/);
+  assert.match(screens, /span\.className = 'voucher-accent'/);
+  assert.match(screens, /document\.createTextNode\(text\)/);
+  assert.match(css, /--voucher-accent: #B03A52;/);
+  assert.match(css, /\.voucher-accent \{[^}]*color: var\(--voucher-accent\);[^}]*font-weight: 800;/);
+  assert.ok(!html.includes('voucher-accent'), '강조 요소는 JS가 만듭니다. HTML에 값을 미리 쓰지 않습니다.');
+});
+
+test('두 기기를 위한 밝은 색 구성 알림과 글자 자동 확대 방지 (ADR-083)', () => {
+  assert.match(html, /<meta name="color-scheme" content="only light">/);
+  const block = (selector) => css.match(new RegExp(`(?:^|\\n)${selector} \\{([^}]*)\\}`))?.[1] ?? '';
+  assert.match(block(':root'), /color-scheme: only light;/, ':root 안에 color-scheme: only light가 있어야 합니다.');
+  assert.match(block('html'), /-webkit-text-size-adjust: 100%;/);
+  assert.match(block('html'), /(?<!-webkit-)text-size-adjust: 100%;/);
+  assert.match(block('\\.field'), /font-size: 1\.125rem;/, '입력창 글자는 16px 이상이어야 iOS가 확대하지 않습니다. (ADR-083)');
+});
+
 test('선물 상자 안내 문구는 ADR-074의 문구이다', () => {
   assert.match(html, /<h1 id="gift-hint"[^>]*>상자를 눌러 선물을 확인하세요\.<\/h1>/);
   assert.ok(content.includes('| 선물 상자 안내 (존댓말 예외, ADR-074) | 상자를 눌러 선물을 확인하세요. |'), '02 문구 표와 일치해야 합니다.');
@@ -146,9 +179,11 @@ test('이전 카드 버튼은 편지·센터·예약 카드 묶음마다 하나�
   assert.match(screens, /cardIndex > 0\) showCard\(cardIndex - 1\)/, '이전 카드로는 첫 카드보다 앞으로 가지 않아야 합니다.');
 });
 
-test('센터 카드: 맨 위 로고, 소개 문구 없음, 초록 지도 버튼과 장식 N 아이콘 (ADR-068)', () => {
+test('센터 카드: 이름 아래 로고, 소개 문구 없음, 초록 지도 버튼과 장식 N 아이콘 (ADR-068, ADR-084)', () => {
   const center = article('card-center');
-  assert.match(center, /<div class="card center">\s*<img class="logo" src="img\/logo\.jpg"[^>]*alt="리스파이어랩 로고">/, '로고가 내용 프레임 맨 위에 있어야 합니다.');
+  const order = [...frameOf('card-center').matchAll(/class="(center-name|logo|center-notice|center-address|center-access|center-actions)"/g)].map((m) => m[1]);
+  assert.deepEqual(order, ['center-name', 'logo', 'center-notice', 'center-address', 'center-access', 'center-actions'], '센터 카드의 순서는 이름, 로고, 안내, 주소, 교통, 버튼입니다. (ADR-084)');
+  assert.match(center, /<div class="card center">\s*<h1 id="center-name"[^>]*>[^<]*<\/h1>\s*<img class="logo" src="img\/logo\.jpg"[^>]*alt="리스파이어랩 로고">/, '센터 이름이 프레임 맨 위, 로고가 그 바로 아래에 있어야 합니다. (ADR-084)');
   assert.ok(!center.includes('center-benefits') && !center.includes('<li'), '소개 문구 3개는 삭제되었습니다.');
   assert.ok(!html.includes('애쓰지 않고 누워서') && !html.includes('프라이빗한 힐링 리커버리'), '삭제한 소개 문구가 남아 있습니다.');
   const map = center.match(/<a id="map-link"([^>]*)>([\s\S]*?)<\/a>/);
@@ -303,6 +338,7 @@ test('CSS·JS 주소의 버전 쿼리(?v=)가 모든 위치에서 같다 (ADR-07
     [await read('src/js/app.js'), /from '\.\/screens\.js\?v=([^']+)'/],
     [screens, /from '\.\/confetti\.js\?v=([^']+)'/],
     [screens, /from '\.\/crypto\.js\?v=([^']+)'/],
+    [screens, /from '\.\/accent\.js\?v=([^']+)'/],
   ];
   const versions = targets.map(([text, pattern]) => {
     const match = text.match(pattern);

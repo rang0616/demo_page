@@ -1,6 +1,7 @@
 /* 디자인 시스템 (design/04). 색은 핑크 계열 첫 버전이며 결과를 보고 조정합니다. (ADR-024) */
 
 :root {
+  color-scheme: only light; /* 밝은 색 구성만 지원합니다. 크롬의 강제 다크 변환을 막습니다. (ADR-083) */
   --bg: #FFF8F4;
   --card: #FFFFFF;
   --accent: #F4A7A7;
@@ -44,6 +45,7 @@
   --gold-a: #F3D9A6;
   --gold-b: #E0B974;
   --muted-on-metal: #6B5C5C; /* 메탈 바탕(--metal-3 #F9DDD6) 위 흐린 글자 대비 4.9:1 */
+  --voucher-accent: #B03A52;  /* "20회" 강조색. 가장 어두운 메탈 바탕 위 글자 대비 4.57:1 (ADR-085) */
   --shine: rgba(255, 255, 255, 0.65);
   --shine-warm: rgba(255, 245, 215, 0.35);
   --shadow-paper: 0 1px 4px rgba(120, 80, 80, 0.18);
@@ -69,6 +71,7 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%; /* 브라우저의 글자 자동 확대를 막습니다. 사용자의 글자 크기 설정은 막지 않습니다. (ADR-083) */
 }
 
 body {
@@ -904,6 +907,11 @@ a.button {
   line-height: 1.45;
   text-shadow: var(--engrave); /* 새긴 글씨 느낌 */
   outline: none;
+}
+
+.voucher-accent {
+  color: var(--voucher-accent);
+  font-weight: 800;
 }
 
 .voucher-subtitle {

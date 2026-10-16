@@ -7,6 +7,8 @@
   <meta name="description" content="열어 보려면 링크를 눌러 주세요">
   <meta name="robots" content="noindex">
   <meta name="theme-color" content="#FFF8F4">
+  <!-- 밝은 색 구성만 지원한다고 알려 크롬의 강제 다크 모드 변환을 막습니다. 삼성 인터넷은 보장하지 못합니다. (ADR-083) -->
+  <meta name="color-scheme" content="only light">
   <meta property="og:type" content="website">
   <meta property="og:title" content="선물이 도착했어요">
   <meta property="og:description" content="열어 보려면 링크를 눌러 주세요">
@@ -20,7 +22,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.min.css">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&display=swap">
-  <link rel="stylesheet" href="css/style.css?v=1.6.0">
+  <link rel="stylesheet" href="css/style.css?v=1.7.0">
 
   <!-- JS가 꺼져 있으면 폼을 숨깁니다. 정답이 주소(URL)에 남지 않게 하기 위해서입니다. (ADR-051) -->
   <noscript><style>#app { display: none; }</style></noscript>
@@ -136,8 +138,8 @@
           <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15 5l-7 7 7 7"/></svg>
         </button>
         <div class="card center">
-          <img class="logo" src="img/logo.jpg" width="720" height="207" alt="리스파이어랩 로고">
           <h1 id="center-name" class="center-name">리스파이어랩 양재점</h1>
+          <img class="logo" src="img/logo.jpg" width="720" height="207" alt="리스파이어랩 로고">
           <p class="center-notice">100% 사전 예약제 1:1 프라이빗 케어 센터</p>
           <address id="center-address" class="center-address">서울특별시 서초구 강남대로 224</address>
           <p class="center-access">양재역 3·4번 출구 도보 3분</p>
@@ -174,6 +176,6 @@
   <!-- 폭죽용 캔버스 (ADR-055). 장식이므로 스크린리더에는 숨기고, 눌러도 아래로 통과합니다. -->
   <canvas id="confetti" class="confetti" aria-hidden="true" hidden></canvas>
 
-  <script type="module" src="js/app.js?v=1.6.0"></script>
+  <script type="module" src="js/app.js?v=1.7.0"></script>
 </body>
 </html>
