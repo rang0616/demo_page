@@ -2,8 +2,9 @@
 // (ADR-047, ADR-053, ADR-054, ADR-055, ADR-057, ADR-060, ADR-065, ADR-066).
 // 안내, 잠금, 오류, 선물 상자, 카드를 한 화면 단위로 바꿉니다. 이전 카드로는 바우처까지만 돌아갑니다. (ADR-065)
 
-import { burstConfetti } from './confetti.js?v=1.6.0';
-import { VOUCHER_KEYS } from './crypto.js?v=1.6.0';
+import { burstConfetti } from './confetti.js?v=1.7.0';
+import { VOUCHER_KEYS } from './crypto.js?v=1.7.0';
+import { splitAccent } from './accent.js?v=1.7.0';
 
 const SCREEN_IDS = {
   intro: 'screen-intro',
@@ -29,6 +30,8 @@ const TODAY_START = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate());
 // 임시: 암호문을 다시 만들기 전까지 맺음말(편지의 마지막 항목)을 이 서명으로 대신 보여 줍니다.
 // 암호문을 다시 만든 뒤에는 이 상수를 지웁니다. (ADR-076)
 const CLOSING_OVERRIDE = '남자친구 휘❤️';
+// 바우처 값 중 이 글자는 강조색으로 보여 줍니다. 값은 그대로 두고 화면에서만 나눕니다. (ADR-085)
+const VOUCHER_ACCENT = '20회';
 const CARD_GUARD_MS = 400; // 카드가 나타난 직후의 "다음" 탭은 무시합니다. (ADR-054) 등장 연출(0.7초)의 "밤!" 지점 뒤까지 막습니다.
 
 const startButton = document.getElementById('start-button');
@@ -106,10 +109,17 @@ export function onSubmit(handler) {
   });
 }
 
-// 복호화한 바우처 값을 화면에 채웁니다. textContent만 씁니다. (ADR-026)
+// 복호화한 바우처 값을 화면에 채웁니다. 텍스트 노드와 textContent만 씁니다. "20회"만 강조 요소로 나눕니다. (ADR-026, ADR-085)
 export function renderVoucher(voucher) {
   for (const key of VOUCHER_KEYS) {
-    document.getElementById(`voucher-${key}`).textContent = voucher[key];
+    const element = document.getElementById(`voucher-${key}`);
+    element.replaceChildren(...splitAccent(voucher[key], VOUCHER_ACCENT).map(({ text, accent }) => {
+      if (!accent) return document.createTextNode(text);
+      const span = document.createElement('span');
+      span.className = 'voucher-accent';
+      span.textContent = text;
+      return span;
+    }));
   }
 }
 
