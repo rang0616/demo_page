@@ -2,9 +2,9 @@
 // (ADR-047, ADR-053, ADR-054, ADR-055, ADR-057, ADR-060, ADR-065, ADR-066).
 // 안내, 잠금, 오류, 선물 상자, 카드를 한 화면 단위로 바꿉니다. 이전 카드로는 바우처까지만 돌아갑니다. (ADR-065)
 
-import { burstConfetti } from './confetti.js?v=1.8.0';
-import { VOUCHER_KEYS } from './crypto.js?v=1.8.0';
-import { splitAccent } from './accent.js?v=1.8.0';
+import { burstConfetti } from './confetti.js?v=1.9.0';
+import { VOUCHER_KEYS } from './crypto.js?v=1.9.0';
+import { splitAccent } from './accent.js?v=1.9.0';
 
 const SCREEN_IDS = {
   intro: 'screen-intro',
