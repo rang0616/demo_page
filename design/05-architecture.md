@@ -191,7 +191,7 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 - 상태 `intro`가 초기 상태입니다. 시작 버튼을 누르면 `locked`로 바꾸고 잠금 화면을 보여 줍니다.
 - 안내 화면의 마크업(ADR-088): `section#screen-intro` 안에 `div.intro-stack`이 있고, 그 안에 알림 카드 `div.notice-card`(아이콘 상자 `div.notice-icon-box`: 물결 `span.notice-ring` 세 개와 아이콘 `span.notice-icon`(🎁와 배지 `span.notice-badge`), 글 `div.notice-text`: 머리글 `div.notice-head`와 제목 `h1#intro-title[tabindex="-1"]`)와 시작 버튼 `button#start-button`이 차례로 있습니다. 머리글, 아이콘, 배지, 물결은 `aria-hidden`입니다. 카드 뒤의 겹친 알림 두 장은 `.notice-card::before`와 `::after`로 그리는 그림(내용 없음)이라 읽히지 않습니다. 이름 구분: `notice-blink`는 편지 봉투 제목용(ADR-087), `.notice-*`와 `notice-in`은 안내 화면의 알림 카드용(ADR-088)입니다. 시작 버튼의 기본 상태는 보이는 상태(불투명)이고 `start-in`은 `animation: start-in 0.4s ease-out 0.7s backwards`로 지연 동안만 keyframes의 시작(투명, 12px 아래)을 적용합니다. 모션 감소 전역 규칙으로 애니메이션이 꺼지면 처음부터 보이고, 키보드 포커스를 받으면(`#start-button:focus-visible`) 애니메이션을 끄고 바로 보입니다(포커스 윤곽이 보이도록). 연출은 CSS 애니메이션만 쓰며(`notice-in`, `start-in`(시작 버튼, 0.7초 지연), `bell-ring`, `ring-pulse`) JS는 관여하지 않습니다. 포커스는 이전과 같이 제목(`#intro-title`)으로 갑니다.
 - 시작 버튼은 HTML에서 비활성으로 시작해 JS가 연결된 뒤 활성화합니다. 잠금 화면은 HTML에서 `hidden`으로 시작합니다.
-- 화면 목록(`SCREEN_IDS`)에 `intro`를 추가합니다. 잠금 화면으로 넘어가면 잠금 화면 제목(`#lock-heading`, 안내와 질문 전체)으로 포커스를 옮깁니다. (ADR-059)
+- 화면 목록(`SCREEN_IDS`)에 `intro`를 추가합니다. 잠금 화면으로 넘어가면 잠금 화면 제목(`#lock-heading`, 질문만 담고 이름은 `aria-labelledby`로 안내와 질문)으로 포커스를 옮깁니다. (ADR-059)
 - 첫 로드에서는 포커스를 옮기지 않습니다. 안내 제목도 다른 화면처럼 `<h1 tabindex="-1">`로 둡니다. 스크린리더는 제목부터 읽습니다.
 - 브라우저 히스토리를 쓰지 않습니다(`history.pushState` 금지). 브라우저의 뒤로 가기를 누르면 카드와 상관없이 페이지를 떠납니다. 화면 안의 "<" 버튼과는 별개입니다. (ADR-065)
 - `<title>`은 화면마다 바꾸지 않고 "선물이 도착했어요"로 고정합니다. (ADR-030)
@@ -200,8 +200,10 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 
 ## 잠금 화면 제목의 구조 (ADR-059)
 
-- 잠금 화면의 `h1`(`id="lock-heading"`, `tabindex="-1"`)은 안내(`.lock-guide`)와 질문(`#lock-question`)을 함께 담습니다. 화면에 들어오면 포커스가 이 제목으로 가서 전체를 읽습니다.
-- 입력창의 `aria-labelledby`는 질문(`#lock-question`)만 가리킵니다. 안내 문구까지 입력창 이름에 들어가지 않게 하기 위해서입니다.
+- 잠금 폼(`form#lock-form.lock-stack`)은 위에서 아래로 안내 문구 `p#lock-guide.lock-guide`(프레임 밖), 흰 프레임 `div.card.lock-frame`(안에 `h1#lock-heading`, 입력창 `input#answer`, 상태 문구 `p#status`), 제출 버튼 `button#submit`(프레임 밖)을 둡니다. (ADR-089)
+- `h1#lock-heading`(`tabindex="-1"`)은 질문(`span#lock-question`)만 담고, `aria-labelledby="lock-guide lock-question"`로 안내 문구와 질문을 이어서 읽습니다. 화면에 들어오면 포커스가 이 제목으로 가서 전체를 읽습니다. (ADR-059, ADR-089) 화면 영역 `section#screen-lock`의 `aria-labelledby`도 같은 값(`lock-guide lock-question`)입니다.
+- 입력창의 `aria-labelledby`는 질문(`#lock-question`)만 가리킵니다. 안내 문구까지 입력창 이름에 들어가지 않게 하기 위해서입니다. 상태 문구는 `aria-describedby="status"`로 연결합니다.
+- 선물 상자 화면(`section#screen-gift`)은 프레임(`.card`)이 없습니다. 안에 화면 읽기용 `h1#gift-hint.sr-only[tabindex="-1"]`("선물 확인하기")와 `button#gift-button.gift`가 있고, 버튼 안에 파동 `span.gift-ring` 세 개(`.gift-ring-2`, `.gift-ring-3`로 지연을 줌)와 흔들리는 래퍼 `span.gift-sway`(그 안에 `span.gift-box`와 뚜껑·리본·몸통)가 있습니다. 모두 `aria-hidden`이고 CSS 애니메이션(`gift-bell`, `gift-wave`)만 쓰며 JS는 관여하지 않습니다. 상자 버튼에 `opening` 클래스가 붙으면 흔들림과 파동을 `animation: none`으로 멈춥니다. (ADR-089)
 
 ## 편지와 센터 안내 구현 (ADR-060)
 
@@ -209,7 +211,7 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 - 예약 안내 카드의 달력(`#calendar`, ADR-069, ADR-072)은 이렇게 만듭니다.
   - JS가 `CALENDAR_MONTHS`(2026년 10월, 11월)로 만들어 채웁니다. 달마다 `div.calendar-month` 안의 `table`(`caption` "2026년 10월", 요일 `th`, 날짜 `td`)이고, 1일의 요일은 `new Date(연, 월-1, 1).getDay()`, 말일은 `new Date(연, 월, 0).getDate()`로 계산합니다. 슬라이드는 CSS 스크롤 스냅(가로)이며, 달력 영역은 `role="region"`, `tabindex="0"`, `aria-label="10월과 11월 달력"`입니다. 스크롤 비율로 아래 점의 현재 표시(`is-current`, `aria-current`)를 갱신합니다. 내용 프레임 안의 버튼은 아래의 월 이동 점 두 개(`button.calendar-dot`, 누르면 `calendar.scrollTo`로 그 달 슬라이드로 이동, ADR-077)뿐이고(이전 버튼은 카드 묶음에 있음, ADR-081) 링크와 입력창은 없습니다.
   - 한 장은 영역 폭의 100%이고, 열이 일요일(0번째)이면 `is-sun`, 토요일(6번째)이면 `is-sat` 클래스를 요일 머리글과 날짜 칸에 붙여 색을 정하며(ADR-079), 날짜 칸은 오늘(`new Date()`의 날짜, 시각 제외)보다 앞이면 `is-past` 클래스, 코드 상수 `CALENDAR_BIRTHDAY`(11월 18일)와 같으면 `is-birthday` 클래스와 하트 요소(`aria-hidden`), 보이지 않는 글 "윰댕 생일"(`sr-only`)을 갖습니다.
-- 센터 카드의 버튼은 지도 링크(`#map-link`)가 위, 주소 복사(`#copy-address`)가 아래입니다. 지도 링크는 앞에 인라인 SVG "N" 아이콘(`aria-hidden`)을 두고, 색은 `--naver`, `--on-naver` 변수로 정합니다. 소개 문구 목록(`.center-benefits`)은 삭제했습니다. (ADR-068)
+- 센터 카드(`div.card.center`(CSS가 메탈 모양을 입힘))의 버튼은 `.center-actions` 안에 한 줄로 지도 링크(`#map-link`, 보이는 글 "지도로 보기", `aria-label="네이버 지도로 보기"`)가 왼쪽, 주소 복사(`#copy-address`)가 오른쪽에 있고 복사 결과 문구 `#copy-status`는 그 아래입니다. (ADR-090) 지도 링크는 앞에 인라인 SVG "N" 아이콘(`aria-hidden`)을 두고, 색은 `--naver`, `--on-naver` 변수로 정합니다. 소개 문구 목록(`.center-benefits`)은 삭제했습니다. (ADR-068)
 - 편지의 맺음말은 편지의 마지막 항목이지만, 암호문을 다시 만들기 전까지는 `screens.js`의 `CLOSING_OVERRIDE`가 있으면 그 값(서명)을 대신 보여 줍니다. 암호문을 다시 만든 뒤 이 상수를 지웁니다. (ADR-076)
 - 카드 마크업(ADR-081): `article#card-…`(`class="card-stack"`, `data-card`, `tabindex="-1"`, `aria-labelledby`) 안에 이전 버튼(`button.back-button[data-back]`, 바우처 제외), 내용 프레임(`div.card`에 카드별 클래스 `voucher`/`letter`/`center`/`booking`), "다음" 버튼 구역(`div.card-actions`, 안에 `button[data-next]`, 마지막 카드 제외)을 차례로 둡니다. 등장 연출은 `article` 전체에 붙습니다. 편지 카드의 `data-state`는 `article`에 있고, 열리면(`open`) CSS가 프레임의 좌우·아래 여백을 없앱니다. 편지 카드의 프레임은 봉투 상태에서도 흰 바탕과 그림자가 없습니다(ADR-086).
 - 이전 버튼은 카드마다 하나씩이며 보이고 숨기는 JS가 없습니다(바우처 카드에는 아예 없음). 누르면 한 장 앞 카드를 보여 줍니다. 편지 카드의 "다음" 버튼 구역(`.card-actions`)은 `hidden`으로 시작해 편지가 열리면 JS가 보여 줍니다. (ADR-065, ADR-081)
@@ -219,8 +221,8 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 
 ## 예약 안내 카드 구현 (ADR-061)
 
-- `article#card-booking`(`tabindex="-1"`, `aria-labelledby="booking-message"`)에 작은 라벨(`.booking-label`)과 본문 `h1#booking-message`만 둡니다. 문장 사이는 `<br>`로 줄을 바꾸고, 💌는 앞에 줄바꿈하지 않는 공백(`&nbsp;`)을 두어 홀로 한 줄에 남지 않게 하며 `aria-hidden`입니다.
-- 마지막 카드이므로 `data-next`가 없고, 버튼·링크·입력창을 두지 않습니다. `tests/page.test.mjs`가 이 규칙을 파일 검사로 지킵니다. (ADR-062)
+- `article#card-booking`(`tabindex="-1"`, `aria-labelledby="booking-message"`)에 작은 라벨(`.booking-label`)과 본문 `h1#booking-message`, 달력 영역을 감싸는 흰 프레임 `div.calendar-frame`(안에 `#calendar`와 `.calendar-dots`, ADR-089)만 둡니다. 예약 카드의 `div.card`는 프레임이 없습니다. 문장 사이는 `<br>`로 줄을 바꾸고, 💌는 앞에 줄바꿈하지 않는 공백(`&nbsp;`)을 두어 홀로 한 줄에 남지 않게 하며 `aria-hidden`입니다.
+- 마지막 카드이므로 `data-next`가 없고, 달력의 월 이동 점 두 개(ADR-077)와 이전 버튼 외에는 버튼·링크·입력창을 두지 않습니다. `tests/page.test.mjs`가 이 규칙을 파일 검사로 지킵니다. (ADR-062)
 
 ## 페이지 구조 테스트 (ADR-062)
 
