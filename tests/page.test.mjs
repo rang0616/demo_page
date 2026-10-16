@@ -110,6 +110,22 @@ test('예약 카드의 달력: 10월·11월, 보기 전용 영역, 버튼·링�
   assert.match(screens, /const CALENDAR_MONTHS = \[\{ year: 2026, month: 10 \}, \{ year: 2026, month: 11 \}\];/);
   assert.match(screens, /new Date\(year, month - 1, 1\)\.getDay\(\)/);
   assert.match(css, /\.calendar \{[^}]*scroll-snap-type: x mandatory/);
+  assert.match(css, /\.calendar-month \{[^}]*flex: 0 0 100%/, '한 번에 한 달만 보이려면 슬라이드 폭이 100%여야 합니다. (ADR-072)');
+});
+
+test('달력: 11월 18일 하트(장식)와 읽어 줄 글, 지난 날짜 표시 (ADR-072)', () => {
+  assert.match(screens, /const CALENDAR_BIRTHDAY = \{ month: 11, day: 18 \};/);
+  assert.match(screens, /heart\.setAttribute\('aria-hidden', 'true'\)/);
+  assert.match(screens, /heart\.textContent = '❤️'/);
+  assert.match(screens, /note\.textContent = ' 윰댕 생일'/);
+  assert.match(screens, /new Date\(year, month - 1, day\) < TODAY_START/);
+  assert.match(css, /\.calendar-month td\.is-past \{[^}]*color: var\(--past-day\)/);
+  assert.match(css, /--past-day: #A39494;/);
+});
+
+test('편지지에 세로 여백선이 없다 (ADR-073)', () => {
+  assert.ok(!css.includes('--paper-margin'), '세로 여백선 변수는 삭제되었습니다.');
+  assert.match(css, /\.letter-body \{\s*padding: calc\(var\(--letter-line\) \* 0\.6\) 16px calc\(var\(--letter-line\) \* 0\.4\);/);
 });
 
 test('편지지와 메탈 바우처의 핵심 스타일이 있다 (ADR-070, ADR-071)', () => {

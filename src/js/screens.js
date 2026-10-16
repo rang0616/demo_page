@@ -21,7 +21,11 @@ const COPY_MESSAGE = { done: '주소를 복사했어!', failed: '복사가 안 �
 const ENVELOPE_OPEN_MS = 1400; // 덮개가 열리고 종이가 올라오는 연출 시간. style.css의 .envelope 전환(0.35초 지연 + 0.8초)과 짝입니다. (ADR-066)
 // 예약 카드의 보기 전용 달력 (ADR-069). 연월은 여기 한 곳에서만 정합니다.
 const CALENDAR_MONTHS = [{ year: 2026, month: 10 }, { year: 2026, month: 11 }];
+const CALENDAR_BIRTHDAY = { month: 11, day: 18 }; // 윰댕 생일. 하트로 표시합니다. (ADR-072)
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+// "오늘" 0시. 이보다 앞선 날짜가 "지난 날짜"입니다. 페이지를 연 시점의 기기 날짜 기준입니다. (ADR-072)
+const NOW = new Date();
+const TODAY_START = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate());
 const CARD_GUARD_MS = 400; // 카드가 나타난 직후의 "다음" 탭은 무시합니다. (ADR-054) 등장 연출(0.7초)의 "밤!" 지점 뒤까지 막습니다.
 
 const startButton = document.getElementById('start-button');
@@ -170,7 +174,22 @@ function buildMonth({ year, month }) {
     const row = document.createElement('tr');
     for (let i = 0; i < 7; i += 1, day += 1) {
       const cell = document.createElement('td');
-      cell.textContent = day >= 1 && day <= lastDay ? String(day) : '';
+      if (day >= 1 && day <= lastDay) {
+        cell.append(document.createTextNode(String(day)));
+        if (new Date(year, month - 1, day) < TODAY_START) cell.classList.add('is-past');
+        if (month === CALENDAR_BIRTHDAY.month && day === CALENDAR_BIRTHDAY.day) {
+          // 하트는 장식이고, 스크린리더에는 보이지 않는 글로 알립니다. (ADR-072)
+          const heart = document.createElement('span');
+          heart.className = 'calendar-heart';
+          heart.setAttribute('aria-hidden', 'true');
+          heart.textContent = '❤️';
+          const note = document.createElement('span');
+          note.className = 'sr-only';
+          note.textContent = ' 윰댕 생일';
+          cell.classList.add('is-birthday');
+          cell.append(heart, note);
+        }
+      }
       row.append(cell);
     }
     body.append(row);

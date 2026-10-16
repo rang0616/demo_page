@@ -23,7 +23,7 @@
   --on-seal: #FFFFFF;
   --shadow-envelope: drop-shadow(0 6px 10px rgba(184, 140, 140, 0.28));
   --letter-line: 2.5rem;   /* 편지지 줄 간격 (ADR-070) */
-  --paper-margin: rgba(214, 120, 130, 0.5);
+  --past-day: #A39494;   /* 지난 날짜. 흰 바탕 대비 2.9:1, 일부러 옅게 (ADR-072) */
 
   /* 네이버 지도 버튼 (ADR-068) */
   --naver: #03C75A;
@@ -378,12 +378,11 @@ a.button {
   flex-direction: column;
 }
 
-/* 편지지 (ADR-070): 아이보리 종이, 글줄에 맞춘 가로 줄, 왼쪽 여백선. 줄 간격은 --letter-line 한 값이고
+/* 편지지 (ADR-070, 세로 여백선 없음 ADR-073): 아이보리 종이, 글줄에 맞춘 가로 줄. 줄 간격은 --letter-line 한 값이고
    호칭·문단·맺음말의 line-height가 모두 같아 글이 줄 위에 앉습니다. */
 .letter-body {
-  padding: calc(var(--letter-line) * 0.6) 16px calc(var(--letter-line) * 0.4) 44px;
+  padding: calc(var(--letter-line) * 0.6) 16px calc(var(--letter-line) * 0.4);
   background:
-    linear-gradient(to right, transparent 36px, var(--paper-margin) 36px, var(--paper-margin) 37px, transparent 37px),
     linear-gradient(to bottom, transparent calc(100% - 1px), var(--paper-line) calc(100% - 1px)) 0 calc(var(--letter-line) * 0.6 - 0.4rem) / 100% var(--letter-line) repeat-y,
     var(--paper);
   border-radius: 6px;
@@ -659,7 +658,7 @@ a.button {
   line-height: 1.5;
 }
 
-/* 예약 카드의 보기 전용 달력 (ADR-069). 옆으로 밀어 넘기며, 다음 달이 조금 보입니다. */
+/* 예약 카드의 보기 전용 달력 (ADR-069). 한 번에 한 달만 보이고 옆으로 밀어 넘깁니다. (ADR-072) */
 .calendar {
   position: relative;
   display: flex;
@@ -681,7 +680,7 @@ a.button {
 }
 
 .calendar-month {
-  flex: 0 0 88%;
+  flex: 0 0 100%;
   scroll-snap-align: start;
 }
 
@@ -705,9 +704,27 @@ a.button {
 }
 
 .calendar-month td {
+  position: relative;
   padding: 8px 0;
   font-size: 0.9375rem;
   border-top: 1px dashed var(--accent);
+}
+
+.calendar-month td.is-past {
+  color: var(--past-day);
+}
+
+.calendar-month td.is-birthday {
+  font-weight: 700;
+}
+
+.calendar-heart {
+  position: absolute;
+  top: 5px;
+  left: 50%;
+  margin-left: 9px;
+  font-size: 0.5625rem;
+  line-height: 1;
 }
 
 .calendar-dots {
