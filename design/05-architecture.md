@@ -147,7 +147,7 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 - 상태 흐름: `intro → locked → decrypting → locked(틀림·네트워크 오류, 입력 유지) | error(데이터·버전)`, `decrypting → gift → opening → cards`. (ADR-053)
 - 잠금 해제 후에는 카드를 한 장씩 넘깁니다: 효과음과 상자 연출 → 바우처 → 편지 → 센터 안내 → 예약 문구. 카드는 "다음" 버튼으로만 넘어갑니다. (ADR-047, ADR-055)
 - 화면 전환 후 새 섹션 제목에 `tabindex="-1"`로 포커스를 옮깁니다. 대기·틀림 문구는 `role="status"`, 오류 화면은 `role="alert"`로 알립니다. (ADR-051)
-- 모듈 역할: `normalize.js`(순수 함수), `crypto.js`(키 파생, 복호화, 오류 구분), `screens.js`(화면과 카드 표시, 이동, 포커스, 바우처·편지 채우기, 편지 봉투 열기, 이전 카드, 센터 주소 복사와 지도 링크), `sound.js`(효과음 합성), `confetti.js`(폭죽), `app.js`(흐름 연결).
+- 모듈 역할: `normalize.js`(순수 함수), `crypto.js`(키 파생, 복호화, 오류 구분), `screens.js`(화면과 카드 표시, 이동, 포커스, 바우처·편지 채우기, 편지 봉투 열기, 이전 카드, 예약 달력, 센터 주소 복사와 지도 링크), `sound.js`(효과음 합성), `confetti.js`(폭죽), `app.js`(흐름 연결).
 
 ## 보조 규칙 (ADR-042, ADR-043)
 
@@ -203,6 +203,8 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 ## 편지와 센터 안내 구현 (ADR-060)
 
 - 편지 카드는 봉투(`#envelope`)와 편지 본문(`#letter-body`)을 함께 갖고, 카드의 `data-state`가 `sealed → opening → open`으로 바뀝니다. 처음에는 봉투만 보이고 본문(`hidden`)과 "다음" 버튼(`hidden`)은 숨겨져 있습니다. 봉인 버튼(`#seal-button`)을 누르면 `opening`(덮개와 종이 움직임, CSS 전환)이 되고, 약 1.4초 뒤 봉투를 숨기고 본문과 "다음" 버튼을 보여 주며 `open`이 됩니다. 이때 포커스는 본문(`tabindex="-1"`)으로 옮깁니다. 모션 감소 설정이면 `opening`을 거치지 않고 바로 `open`입니다. 카드의 이름은 보이지 않는 제목 `#letter-heading`(`h1`)이 맡습니다. (ADR-066)
+- 예약 안내 카드의 달력(`#calendar`, ADR-069)은 JS가 `CALENDAR_MONTHS`(2026년 10월, 11월)로 만들어 채웁니다. 달마다 `table`(`caption` "2026년 10월", 요일 `th`, 날짜 `td`)이고, 1일의 요일은 `new Date(연, 월-1, 1).getDay()`, 말일은 `new Date(연, 월, 0).getDate()`로 계산합니다. 슬라이드는 CSS 스크롤 스냅(가로)이며, 달력 영역은 `role="region"`, `tabindex="0"`, `aria-label="10월과 11월 달력"`입니다. 스크롤 위치로 아래 점(`aria-hidden`)을 갱신합니다. 버튼, 링크, 입력창은 없습니다.
+- 센터 카드의 버튼은 지도 링크(`#map-link`)가 위, 주소 복사(`#copy-address`)가 아래입니다. 지도 링크는 앞에 인라인 SVG "N" 아이콘(`aria-hidden`)을 두고, 색은 `--naver`, `--on-naver` 변수로 정합니다. 소개 문구 목록(`.center-benefits`)은 삭제했습니다. (ADR-068)
 - 이전 카드 버튼(`#back-button`)은 카드 화면 안에 하나만 두고, 현재 카드가 첫 카드가 아닐 때만 보입니다. 누르면 한 장 앞 카드를 보여 줍니다. (ADR-065)
 - 센터 정보는 공개 HTML에 정적으로 둡니다. 주소는 `<address>` 텍스트 한 곳이며, 복사할 값과 지도 링크의 검색어는 이 텍스트에서 읽습니다. 지도 링크의 주소(`href`)는 JS가 이 텍스트로 만듭니다.
 - 주소 복사는 `navigator.clipboard.writeText`만 씁니다. 실패하면(API가 없거나 거부됨) 실패 문구를 보여 줍니다. 복사 결과 문구는 `role="status"` 영역에 같은 방식으로 다시 읽히게 갱신합니다.
@@ -215,4 +217,4 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 
 ## 페이지 구조 테스트 (ADR-062)
 
-- `tests/page.test.mjs`가 `index.html`, `screens.js`, 설계 문서(02, 01)를 글자로 읽어 카드 순서와 속성, 편지 처음 상태(봉투, ADR-066), 이전 카드 버튼(ADR-065), 미리보기 이미지(ADR-064), 문구 일치, 메타, 접근성 규칙, 외부 주소 허용 목록, 금지 API, 크기 예산, 암호문 구조를 검사합니다. 브라우저 동작은 `/preview-check`가 맡습니다.
+- `tests/page.test.mjs`가 `index.html`, `screens.js`, 설계 문서(02, 01)를 글자로 읽어 카드 순서와 속성, 편지 처음 상태(봉투, ADR-066), 이전 카드 버튼(ADR-065), 미리보기 이미지(ADR-064), 센터 카드(로고, 지도 버튼, 소개 문구 없음, ADR-068), 예약 달력(ADR-069), 문구 일치, 메타, 접근성 규칙, 외부 주소 허용 목록, 금지 API, 크기 예산, 암호문 구조를 검사합니다. 브라우저 동작은 `/preview-check`가 맡습니다.

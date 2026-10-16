@@ -1,4 +1,4 @@
-// 화면과 카드 전환(이전 카드 포함), 상태 문구, 포커스 이동, 바우처·편지 표시, 편지 봉투 열기, 센터 주소 복사와 지도 링크
+// 화면과 카드 전환(이전 카드 포함), 상태 문구, 포커스 이동, 바우처·편지 표시, 편지 봉투 열기, 예약 달력, 센터 주소 복사와 지도 링크
 // (ADR-047, ADR-053, ADR-054, ADR-055, ADR-057, ADR-060, ADR-065, ADR-066).
 // 안내, 잠금, 오류, 선물 상자, 카드를 한 화면 단위로 바꿉니다. 이전 카드로는 바우처까지만 돌아갑니다. (ADR-065)
 
@@ -19,6 +19,9 @@ const NAVER_MAP_SEARCH = 'https://map.naver.com/p/search/';
 // 센터 카드의 안내 문구 (design/02 연출 문구). 시스템 문구라 반말입니다. (ADR-029)
 const COPY_MESSAGE = { done: '주소를 복사했어!', failed: '복사가 안 됐어. 주소를 길게 눌러서 복사해 줘.' };
 const ENVELOPE_OPEN_MS = 1400; // 덮개가 열리고 종이가 올라오는 연출 시간. style.css의 .envelope 전환(0.35초 지연 + 0.8초)과 짝입니다. (ADR-066)
+// 예약 카드의 보기 전용 달력 (ADR-069). 연월은 여기 한 곳에서만 정합니다.
+const CALENDAR_MONTHS = [{ year: 2026, month: 10 }, { year: 2026, month: 11 }];
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 const CARD_GUARD_MS = 400; // 카드가 나타난 직후의 "다음" 탭은 무시합니다. (ADR-054) 등장 연출(0.7초)의 "밤!" 지점 뒤까지 막습니다.
 
 const startButton = document.getElementById('start-button');
@@ -145,6 +148,51 @@ sealButton.addEventListener('click', () => {
   letterCard.dataset.state = 'opening';
   setTimeout(finishEnvelope, ENVELOPE_OPEN_MS);
 });
+
+// 예약 카드의 달력: 달마다 표(제목, 요일, 날짜)를 만들어 옆으로 밀어 넘기게 합니다. 보기만 하며 textContent만 씁니다. (ADR-069)
+function buildMonth({ year, month }) {
+  const monthBox = document.createElement('div');
+  monthBox.className = 'calendar-month';
+  const table = document.createElement('table');
+  const caption = document.createElement('caption');
+  caption.textContent = `${year}년 ${month}월`;
+  const head = document.createElement('tr');
+  for (const name of WEEKDAYS) {
+    const th = document.createElement('th');
+    th.scope = 'col';
+    th.textContent = name;
+    head.append(th);
+  }
+  const body = document.createElement('tbody');
+  const firstWeekday = new Date(year, month - 1, 1).getDay();
+  const lastDay = new Date(year, month, 0).getDate();
+  for (let day = 1 - firstWeekday; day <= lastDay; ) {
+    const row = document.createElement('tr');
+    for (let i = 0; i < 7; i += 1, day += 1) {
+      const cell = document.createElement('td');
+      cell.textContent = day >= 1 && day <= lastDay ? String(day) : '';
+      row.append(cell);
+    }
+    body.append(row);
+  }
+  const thead = document.createElement('thead');
+  thead.append(head);
+  table.append(caption, thead, body);
+  monthBox.append(table);
+  return monthBox;
+}
+
+const calendar = document.getElementById('calendar');
+const calendarDots = Array.from(document.querySelectorAll('.calendar-dot'));
+calendar.replaceChildren(...CALENDAR_MONTHS.map(buildMonth));
+// 현재 달은 스크롤 비율로 구합니다. 카드가 숨겨져 있어 크기가 0이면 첫 달입니다. 마지막 장은 끝까지 밀어도 왼쪽에 붙지 못하므로 위치 비교로는 구할 수 없습니다.
+function updateCalendarDots() {
+  const range = calendar.scrollWidth - calendar.clientWidth;
+  const current = range > 0 ? Math.round((calendar.scrollLeft / range) * (CALENDAR_MONTHS.length - 1)) : 0;
+  calendarDots.forEach((dot, i) => dot.classList.toggle('is-current', i === current));
+}
+calendar.addEventListener('scroll', updateCalendarDots, { passive: true });
+updateCalendarDots();
 
 // 센터 안내: 주소는 화면의 주소 텍스트 한 곳에서만 읽습니다. 복사할 값과 지도 링크가 모두 여기서 나옵니다. (ADR-060)
 const addressElement = document.getElementById('center-address');
