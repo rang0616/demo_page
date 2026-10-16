@@ -23,6 +23,10 @@
   --on-seal: #FFFFFF;
   --shadow-envelope: drop-shadow(0 6px 10px rgba(184, 140, 140, 0.28));
   --letter-line: 2.5rem;   /* 편지지 줄 간격 (ADR-070) */
+  --sat: #1565C0;        /* 토요일 파랑, 흰 바탕 대비 5.7:1 (ADR-079) */
+  --sun: #C62828;        /* 일요일 빨강, 흰 바탕 대비 5.6:1 */
+  --sat-past: #7E9CC8;   /* 지난 토요일, 일부러 옅게 */
+  --sun-past: #D08A8A;   /* 지난 일요일, 일부러 옅게 */
   --past-day: #A39494;   /* 지난 날짜. 흰 바탕 대비 2.9:1, 일부러 옅게 (ADR-072) */
 
   /* 네이버 지도 버튼 (ADR-068) */
@@ -728,6 +732,24 @@ a.button {
   color: var(--past-day);
 }
 
+.calendar-month th.is-sat,
+.calendar-month td.is-sat {
+  color: var(--sat);
+}
+
+.calendar-month th.is-sun,
+.calendar-month td.is-sun {
+  color: var(--sun);
+}
+
+.calendar-month td.is-sat.is-past {
+  color: var(--sat-past);
+}
+
+.calendar-month td.is-sun.is-past {
+  color: var(--sun-past);
+}
+
 .calendar-month td.is-birthday {
   font-weight: 700;
 }
@@ -744,18 +766,42 @@ a.button {
 .calendar-dots {
   display: flex;
   justify-content: center;
-  gap: 8px;
 }
 
+/* 월 이동 버튼 (ADR-077). 눈에 보이는 점은 10px, 눌러지는 영역은 44×44px입니다. 현재 달은 채운 점, 다른 달은 테두리만 있는 빈 점입니다(컨트롤 대비 3:1 이상). */
 .calendar-dot {
-  width: 8px;
-  height: 8px;
-  background: var(--accent);
+  position: relative;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.calendar-dot::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  box-sizing: border-box;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  background: transparent;
+  border: 2px solid var(--accent-border);
   border-radius: 50%;
 }
 
-.calendar-dot.is-current {
+.calendar-dot.is-current::before {
   background: var(--accent-border);
+}
+
+.calendar-dot:focus-visible {
+  outline: 3px solid var(--text);
+  outline-offset: -4px;
 }
 
 /* 폭죽 캔버스 (ADR-055) */
