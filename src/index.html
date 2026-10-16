@@ -69,7 +69,7 @@
     <!-- 선물 상자 화면 (ADR-053). 상자는 장식이므로 스크린리더에는 숨기고 버튼 이름으로 알립니다. -->
     <section id="screen-gift" class="screen" aria-labelledby="gift-hint" hidden>
       <div class="card gift-card">
-        <h1 id="gift-hint" class="question" tabindex="-1">상자를 눌러서 열어 봐</h1>
+        <h1 id="gift-hint" class="question" tabindex="-1">상자를 눌러 선물을 확인하세요.</h1>
         <!-- data-own-sound: 상자는 "뿅" 소리와 폭죽이 따로 있으므로 버튼 공통 "뾱"을 내지 않습니다. (ADR-058) -->
         <button id="gift-button" type="button" class="gift" data-own-sound aria-label="선물 상자 열기">
           <span class="gift-box" aria-hidden="true">
@@ -105,7 +105,7 @@
       <!-- 편지 카드 (ADR-060, 봉투에서 시작 ADR-066). 봉투는 CSS 그림이며 장식입니다(aria-hidden).
            봉인 버튼을 누르면 봉투가 열리고 편지(#letter-body)가 나타납니다. 본문은 복호화한 값을 JS가 textContent로 채웁니다. -->
       <article id="card-letter" class="card letter" data-card data-state="sealed" tabindex="-1" hidden aria-labelledby="letter-heading">
-        <h1 id="letter-heading" class="sr-only">편지</h1>
+        <h1 id="letter-heading" class="letter-heading">편지가 도착했습니다!</h1>
         <div id="envelope" class="envelope">
           <div class="envelope-back" aria-hidden="true"></div>
           <div class="envelope-paper" aria-hidden="true"></div>

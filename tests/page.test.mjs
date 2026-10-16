@@ -64,10 +64,23 @@ test('예약 안내 카드에는 버튼, 링크, 입력창이 없다 (ADR-011, A
   }
 });
 
+test('맺음말은 암호문을 다시 만들기 전까지 서명으로 대신 보인다 (ADR-076)', () => {
+  assert.match(screens, /const CLOSING_OVERRIDE = '남자친구 휘❤️';/);
+  assert.match(screens, /textContent = CLOSING_OVERRIDE \?\? letter\[letter\.length - 1\]/);
+});
+
+test('선물 상자 안내 문구는 ADR-074의 문구이다', () => {
+  assert.match(html, /<h1 id="gift-hint"[^>]*>상자를 눌러 선물을 확인하세요\.<\/h1>/);
+  assert.ok(content.includes('| 선물 상자 안내 (존댓말 예외, ADR-074) | 상자를 눌러 선물을 확인하세요. |'), '02 문구 표와 일치해야 합니다.');
+  assert.ok(content.includes('편지가 도착했습니다!'), '02 문구 표에 편지 봉투 제목이 있어야 합니다.');
+});
+
 test('편지는 봉투로 시작한다: 본문과 "다음" 버튼 hidden, 봉인 버튼 이름, 접기 버튼 없음 (ADR-066)', () => {
   const letter = article('card-letter');
   assert.match(letter.match(/<article[^>]*>/)[0], /data-state="sealed"/);
-  assert.match(letter, /<h1 id="letter-heading" class="sr-only">편지<\/h1>/);
+  assert.match(letter, /<h1 id="letter-heading" class="letter-heading">편지가 도착했습니다!<\/h1>/, '봉투 위에 보이는 제목이 있어야 합니다. (ADR-074)');
+  assert.match(screens, /letterHeading\.className = 'sr-only'/, '열린 뒤에는 제목이 보이지 않는 글로 바뀌어야 합니다.');
+  assert.match(screens, /const ENVELOPE_OPEN_MS = 800;/, '봉투 여는 시간은 ADR-075의 0.8초입니다.');
   const seal = letter.match(/<button id="seal-button"([^>]*)>\s*([^<]*?)\s*<\/button>/);
   assert.ok(seal, '봉인 버튼이 없습니다.');
   assert.ok(seal[1].includes('aria-label="편지 봉투 열기"') && seal[1].includes('aria-controls="letter-body"'));
