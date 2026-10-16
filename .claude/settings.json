@@ -5,7 +5,6 @@
       "Bash(git diff:*)",
       "Bash(git log:*)",
       "Bash(git branch:*)",
-      "Bash(open index.html)",
       "Bash(curl -sI:*)"
     ],
     "deny": [
