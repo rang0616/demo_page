@@ -45,7 +45,7 @@ demo_page/
 ├── package.json           # 모듈 설정과 명령 (type: module, 배포 안 함)
 ├── .claude/               # Claude Code 설정과 커맨드
 │   ├── settings.json      # 공유 권한 설정
-│   └── commands/          # 슬래시 커맨드 (/preview-check, /check-links)
+│   └── commands/          # 슬래시 커맨드 (/preview-check, /check-links, /design-review)
 ├── .gitignore             # 커밋에서 제외할 파일
 └── .DS_Store              # macOS 파일 (추적하지 않음)
 ```

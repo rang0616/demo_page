@@ -367,10 +367,6 @@ a.button {
   overflow-wrap: anywhere; /* 공백 없는 긴 글자가 카드 밖으로 넘치지 않게 합니다. (ADR-060) */
 }
 
-.letter .button {
-  font-family: var(--font-body);
-}
-
 .letter-salutation {
   font-size: 1.75rem;
   font-weight: 400;
@@ -380,6 +376,15 @@ a.button {
 .letter-paragraphs {
   display: flex;
   flex-direction: column;
+}
+
+/* 편지가 열리면 프레임(흰 테두리와 그림자)을 없애고 편지지만 보입니다. 위쪽 여백은 이전 버튼 자리라 남깁니다. (ADR-081) */
+#card-letter[data-state="open"] .letter {
+  padding-right: 0;
+  padding-bottom: 0;
+  padding-left: 0;
+  background: none;
+  box-shadow: none;
 }
 
 /* 편지지 (ADR-070, 세로 여백선 없음 ADR-073): 아이보리 종이, 글줄에 맞춘 가로 줄. 줄 간격은 --letter-line 한 값이고
@@ -423,7 +428,7 @@ a.button {
   transition: opacity 0.15s ease;
 }
 
-.letter[data-state="opening"] .letter-heading {
+#card-letter[data-state="opening"] .letter-heading {
   opacity: 0;
 }
 
@@ -520,25 +525,29 @@ a.button {
   50%      { transform: scale(1.07); }
 }
 
-.letter[data-state="opening"] .seal {
+#card-letter[data-state="opening"] .seal {
   opacity: 0;
   transform: scale(0.5);
   pointer-events: none;
   animation: none;
 }
 
-.letter[data-state="opening"] .envelope-flap {
+#card-letter[data-state="opening"] .envelope-flap {
   transform: rotateX(180deg);
   z-index: 0;
 }
 
-.letter[data-state="opening"] .envelope-paper {
+#card-letter[data-state="opening"] .envelope-paper {
   transform: translateY(-46%);
 }
 
-/* 이전 카드 버튼 (ADR-065). 카드 화면의 왼쪽 위. 바우처 카드에서는 숨겨집니다. */
-#screen-cards {
+/* 이전 카드 버튼 (ADR-065, ADR-081). 카드마다 하나(바우처 제외), 프레임 왼쪽 위 12px에 겹쳐 놓입니다. */
+/* 카드 묶음: 내용 프레임(.card)과 그 아래 따로 있는 "다음" 버튼 구역(.card-actions), 프레임 위의 이전 버튼이 한 덩어리로 나타납니다. (ADR-081) */
+.card-stack {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .back-button {
@@ -575,9 +584,9 @@ a.button {
 }
 
 /* 이전 카드 버튼이 있는 카드는 위쪽 여백을 더 두어 글과 겹치지 않게 합니다. */
-#card-letter,
-#card-center,
-#card-booking {
+.card.letter,
+.card.center,
+.card.booking {
   padding-top: 64px;
 }
 

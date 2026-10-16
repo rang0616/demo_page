@@ -24,6 +24,18 @@ function article(id) {
   return match[0];
 }
 
+// 카드 묶음 안의 내용 프레임(<div class="card ...">...</div>)만 꺼냅니다. 프레임은 다음 구역(.card-actions)이나 </article> 바로 앞에서 끝납니다.
+// 이전 버튼과 다음 구역은 프레임 밖입니다. (ADR-081) 들여쓰기에 기대지 않습니다.
+function frameOf(id) {
+  const stack = article(id);
+  const start = stack.search(/<div class="card [a-z]+">/);
+  assert.ok(start >= 0, `${id}에 내용 프레임(div.card)이 없습니다.`);
+  const actions = stack.search(/<div class="card-actions"/);
+  const end = actions >= 0 ? actions : stack.lastIndexOf('</article>');
+  assert.ok(end > start, `${id}의 내용 프레임 끝을 찾지 못했습니다.`);
+  return stack.slice(start, end).trimEnd().replace(/<\/div>$/, '');
+}
+
 // 태그를 걷어내고 공백(nbsp 포함)을 정리한 글자만 남깁니다. <br>은 공백으로 봅니다.
 const textOf = (fragment) => fragment
   .replace(/<br\s*\/?>/g, ' ')
@@ -49,6 +61,28 @@ test('모든 카드는 data-card, tabindex=-1, hidden, aria-labelledby를 가진
   }
 });
 
+test('카드 묶음 구조: article.card-stack 안에 내용 프레임 하나, 다음 버튼은 프레임 밖 .card-actions (ADR-081)', () => {
+  for (const id of cardIds) {
+    const stack = article(id);
+    assert.match(stack.match(/<article[^>]*>/)[0], /class="card-stack"/, `${id}는 card-stack이어야 합니다.`);
+    assert.equal((stack.match(/<div class="card [a-z]+">/g) || []).length, 1, `${id}에는 내용 프레임이 하나여야 합니다.`);
+    assert.ok(!frameOf(id).includes('data-next'), `${id}의 다음 버튼은 프레임 밖 구역에 있어야 합니다.`);
+    const last = id === cardIds[cardIds.length - 1];
+    assert.equal(/<div class="card-actions"[^>]*>\s*<button[^>]*data-next[^>]*>다음<\/button>\s*<\/div>/.test(stack), !last, `${id}의 다음 구역 여부가 규칙과 다릅니다.`);
+    if (id !== 'card-letter' && !last) assert.ok(!/<div class="card-actions"[^>]*hidden/.test(stack), `${id}의 다음 구역은 처음부터 보여야 합니다.`);
+    // 마크업 순서: 이전 버튼(있다면) → 프레임 → 다음 구역
+    const backAt = stack.search(/<button[^>]*data-back/), frameAt = stack.search(/<div class="card [a-z]+">/), actionsAt = stack.search(/<div class="card-actions"/);
+    if (backAt >= 0) assert.ok(backAt < frameAt, `${id}: 이전 버튼이 프레임보다 앞에 있어야 합니다.`);
+    if (actionsAt >= 0) assert.ok(frameAt < actionsAt, `${id}: 다음 구역이 프레임 뒤에 있어야 합니다.`);
+  }
+  assert.ok(!article('card-voucher').includes('data-back'), '바우처 카드에는 이전 버튼이 없습니다.');
+  assert.match(css, /\.card-stack \{[^}]*display: flex;[^}]*flex-direction: column;[^}]*gap: 16px;/);
+  assert.match(css, /#card-letter\[data-state="open"\] \.letter \{[^}]*background: none;[^}]*box-shadow: none;/, '열린 편지는 프레임 없이 보여야 합니다.');
+  assert.match(css, /#card-letter\[data-state="open"\] \.letter \{[^}]*padding-right: 0;[^}]*padding-bottom: 0;[^}]*padding-left: 0;/, '열린 편지의 좌우·아래 안쪽 여백은 0이어야 합니다(위쪽 64px은 이전 버튼 자리).');
+  assert.match(css, /\.back-button \{[^}]*position: absolute;[^}]*top: 12px;[^}]*left: 12px;/, '이전 버튼은 프레임 왼쪽 위 12px에 겹쳐 놓입니다.');
+  assert.match(css, /\.card\.letter,\s*\.card\.center,\s*\.card\.booking \{[^}]*padding-top: 64px;/, '이전 버튼이 있는 프레임은 위쪽 안쪽 여백이 64px이어야 합니다.');
+});
+
 test('마지막 카드를 뺀 모든 카드에는 "다음" 버튼이 있고, 마지막 카드에는 없다 (ADR-047, ADR-061)', () => {
   const last = cardIds[cardIds.length - 1];
   for (const id of cardIds) {
@@ -57,15 +91,17 @@ test('마지막 카드를 뺀 모든 카드에는 "다음" 버튼이 있고, 마
   }
 });
 
-test('예약 안내 카드에는 링크와 입력창이 없고, 버튼은 달력 월 이동 점 둘뿐이다 (ADR-011, ADR-061, ADR-077)', () => {
+test('예약 안내 카드: 링크와 입력창이 없고, 내용 프레임 안의 버튼은 월 이동 점 둘뿐이다. 이전 버튼은 프레임 밖 카드 묶음에 있다 (ADR-011, ADR-061, ADR-077, ADR-081)', () => {
   const booking = article('card-booking');
   for (const tag of ['<a ', '<input', '<textarea', '<select']) {
     assert.ok(!booking.includes(tag), `예약 안내 카드에 ${tag}가 있습니다.`);
   }
-  const buttons = booking.match(/<button[^>]*>/g) || [];
-  assert.equal(buttons.length, 2);
-  assert.ok(buttons.every((b) => b.includes('class="calendar-dot') && b.includes('aria-label="')), '버튼은 이름이 있는 월 이동 점이어야 합니다.');
-  assert.ok(!booking.includes('data-next') && !booking.includes('data-back'));
+  const frame = frameOf('card-booking');
+  const frameButtons = frame.match(/<button[^>]*>/g) || [];
+  assert.equal(frameButtons.length, 2);
+  assert.ok(frameButtons.every((b) => b.includes('class="calendar-dot') && b.includes('aria-label="')), '프레임 안의 버튼은 이름이 있는 월 이동 점이어야 합니다.');
+  assert.equal((booking.match(/<button[^>]*data-back[^>]*>/g) || []).length, 1, '이전 버튼은 카드 묶음에 하나 있어야 합니다.');
+  assert.ok(!booking.includes('data-next'), '마지막 카드에는 다음 버튼 구역이 없습니다.');
 });
 
 test('맺음말은 암호문을 다시 만들기 전까지 서명으로 대신 보인다 (ADR-076)', () => {
@@ -90,25 +126,29 @@ test('편지는 봉투로 시작한다: 본문과 "다음" 버튼 hidden, 봉인
   assert.ok(seal[1].includes('aria-label="편지 봉투 열기"') && seal[1].includes('aria-controls="letter-body"'));
   assert.equal(seal[2], '열기');
   assert.match(letter, /<div id="letter-body"[^>]*\shidden[\s>]/);
-  assert.match(letter, /<button[^>]*data-next[^>]*\shidden[^>]*>|<button[^>]*\shidden[^>]*data-next[^>]*>/, '"다음" 버튼은 편지가 열릴 때까지 숨겨져야 합니다.');
+  assert.match(letter, /<div class="card-actions" hidden>\s*<button[^>]*data-next/, '"다음" 버튼 구역은 편지가 열릴 때까지 숨겨져야 합니다.');
+  assert.match(screens, /letterActions\.hidden = false/, '편지가 열리면 다음 구역을 보여 줘야 합니다.');
   assert.ok(!letter.includes('letter-toggle'), '접기/펼치기 버튼은 ADR-066에서 없앴습니다.');
   const decorative = letter.match(/<div class="envelope-(back|paper|pocket|flap)" aria-hidden="true">/g) || [];
   assert.equal(decorative.length, 4, '봉투 그림 4조각은 aria-hidden이어야 합니다.');
 });
 
-test('이전 카드 버튼이 카드 화면에 하나 있고 이름이 있다. 바우처에서는 JS가 숨긴다 (ADR-065)', () => {
+test('이전 카드 버튼은 편지·센터·예약 카드 묶음마다 하나씩 있고 이름이 있다. 바우처에는 없다 (ADR-065, ADR-081)', () => {
   const buttons = html.match(/<button[^>]*data-back[^>]*>/g) || [];
-  assert.equal(buttons.length, 1);
-  assert.ok(buttons[0].includes('id="back-button"') && buttons[0].includes('aria-label="이전 카드로"') && buttons[0].includes('hidden'));
-  assert.match(html, /<button id="back-button"[\s\S]*?<svg[^>]*aria-hidden="true"/, '"<" 그림은 장식(aria-hidden)이어야 합니다.');
-  assert.ok(html.indexOf('id="back-button"') > html.indexOf('id="screen-cards"'), '이전 카드 버튼은 카드 화면 안에 있어야 합니다.');
-  assert.match(screens, /backButton\.hidden = cardIndex === 0/, '바우처(첫 카드)에서 이전 카드 버튼을 숨기는 코드가 없습니다.');
+  assert.equal(buttons.length, 3);
+  assert.ok(buttons.every((b) => b.includes('class="back-button"') && b.includes('aria-label="이전 카드로"') && !b.includes('hidden')), '이전 버튼은 이름이 있고 숨기지 않습니다.');
+  assert.ok(!html.includes('id="back-button"'), '단일 #back-button은 카드마다 하나씩으로 바뀌었습니다.');
+  for (const id of ['card-letter', 'card-center', 'card-booking']) {
+    assert.equal((article(id).match(/<button[^>]*data-back[^>]*>/g) || []).length, 1, `${id}에 이전 버튼이 하나 있어야 합니다.`);
+    assert.match(article(id), /<button[^>]*data-back[^>]*>\s*<svg[^>]*aria-hidden="true"/, '"<" 그림은 장식(aria-hidden)이어야 합니다.');
+  }
+  assert.ok(!/backButton/.test(screens), '이전 버튼을 보이고 숨기는 JS는 없어야 합니다. (ADR-081)');
   assert.match(screens, /cardIndex > 0\) showCard\(cardIndex - 1\)/, '이전 카드로는 첫 카드보다 앞으로 가지 않아야 합니다.');
 });
 
 test('센터 카드: 맨 위 로고, 소개 문구 없음, 초록 지도 버튼과 장식 N 아이콘 (ADR-068)', () => {
   const center = article('card-center');
-  assert.match(center, /<article[^>]*>\s*(?:<!--[\s\S]*?-->\s*)?<img class="logo" src="img\/logo\.jpg"[^>]*alt="리스파이어랩 로고">/, '로고가 카드 맨 위에 있어야 합니다.');
+  assert.match(center, /<div class="card center">\s*<img class="logo" src="img\/logo\.jpg"[^>]*alt="리스파이어랩 로고">/, '로고가 내용 프레임 맨 위에 있어야 합니다.');
   assert.ok(!center.includes('center-benefits') && !center.includes('<li'), '소개 문구 3개는 삭제되었습니다.');
   assert.ok(!html.includes('애쓰지 않고 누워서') && !html.includes('프라이빗한 힐링 리커버리'), '삭제한 소개 문구가 남아 있습니다.');
   const map = center.match(/<a id="map-link"([^>]*)>([\s\S]*?)<\/a>/);
