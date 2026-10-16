@@ -18,7 +18,7 @@ const CARD_IDS = ['card-voucher', 'card-letter', 'card-center', 'card-booking'];
 const NAVER_MAP_SEARCH = 'https://map.naver.com/p/search/';
 // 센터 카드의 안내 문구 (design/02 연출 문구). 시스템 문구라 반말입니다. (ADR-029)
 const COPY_MESSAGE = { done: '주소를 복사했어!', failed: '복사가 안 됐어. 주소를 길게 눌러서 복사해 줘.' };
-const ENVELOPE_OPEN_MS = 1400; // 덮개가 열리고 종이가 올라오는 연출 시간. style.css의 .envelope 전환(0.35초 지연 + 0.8초)과 짝입니다. (ADR-066)
+const ENVELOPE_OPEN_MS = 800; // 덮개가 열리고 종이가 올라오는 연출 시간. style.css의 .envelope 전환(덮개 0.4초, 종이 0.1초 지연 + 0.5초)과 짝입니다. (ADR-066, ADR-075)
 // 예약 카드의 보기 전용 달력 (ADR-069). 연월은 여기 한 곳에서만 정합니다.
 const CALENDAR_MONTHS = [{ year: 2026, month: 10 }, { year: 2026, month: 11 }];
 const CALENDAR_BIRTHDAY = { month: 11, day: 18 }; // 윰댕 생일. 하트로 표시합니다. (ADR-072)
@@ -26,6 +26,9 @@ const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 // "오늘" 0시. 이보다 앞선 날짜가 "지난 날짜"입니다. 페이지를 연 시점의 기기 날짜 기준입니다. (ADR-072)
 const NOW = new Date();
 const TODAY_START = new Date(NOW.getFullYear(), NOW.getMonth(), NOW.getDate());
+// 임시: 암호문을 다시 만들기 전까지 맺음말(편지의 마지막 항목)을 이 서명으로 대신 보여 줍니다.
+// 암호문을 다시 만든 뒤에는 이 상수를 지웁니다. (ADR-076)
+const CLOSING_OVERRIDE = '남자친구 휘❤️';
 const CARD_GUARD_MS = 400; // 카드가 나타난 직후의 "다음" 탭은 무시합니다. (ADR-054) 등장 연출(0.7초)의 "밤!" 지점 뒤까지 막습니다.
 
 const startButton = document.getElementById('start-button');
@@ -114,7 +117,7 @@ export function renderVoucher(voucher) {
 // 복호화한 편지를 채웁니다. 첫 항목은 호칭, 마지막 항목은 맺음말, 그 사이는 문단입니다. textContent만 씁니다. (ADR-026, ADR-060)
 export function renderLetter(letter) {
   document.getElementById('letter-salutation').textContent = letter[0];
-  document.getElementById('letter-closing').textContent = letter[letter.length - 1];
+  document.getElementById('letter-closing').textContent = CLOSING_OVERRIDE ?? letter[letter.length - 1];
   const paragraphs = document.getElementById('letter-paragraphs');
   paragraphs.replaceChildren(...letter.slice(1, -1).map((text) => {
     const p = document.createElement('p');
@@ -129,6 +132,7 @@ const letterCard = document.getElementById('card-letter');
 const envelope = document.getElementById('envelope');
 const sealButton = document.getElementById('seal-button');
 const letterBody = document.getElementById('letter-body');
+const letterHeading = document.getElementById('letter-heading');
 const letterNext = letterCard.querySelector('[data-next]');
 
 function prefersReducedMotion() {
@@ -140,7 +144,8 @@ function finishEnvelope() {
   letterBody.hidden = false;
   letterNext.hidden = false;
   letterCard.dataset.state = 'open';
-  letterBody.focus();
+  letterHeading.className = 'sr-only'; // 열린 뒤에는 보이지 않는 제목으로 남아 카드의 이름만 맡습니다. (ADR-074)
+  if (!letterCard.hidden) letterBody.focus(); // 여는 도중 다른 카드로 갔다면 포커스를 옮기지 않습니다.
 }
 
 sealButton.addEventListener('click', () => {
