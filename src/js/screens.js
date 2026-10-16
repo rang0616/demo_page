@@ -2,8 +2,8 @@
 // (ADR-047, ADR-053, ADR-054, ADR-055, ADR-057, ADR-060, ADR-065, ADR-066).
 // 안내, 잠금, 오류, 선물 상자, 카드를 한 화면 단위로 바꿉니다. 이전 카드로는 바우처까지만 돌아갑니다. (ADR-065)
 
-import { burstConfetti } from './confetti.js';
-import { VOUCHER_KEYS } from './crypto.js';
+import { burstConfetti } from './confetti.js?v=1.5.0';
+import { VOUCHER_KEYS } from './crypto.js?v=1.5.0';
 
 const SCREEN_IDS = {
   intro: 'screen-intro',
@@ -170,6 +170,8 @@ function buildMonth({ year, month }) {
     const th = document.createElement('th');
     th.scope = 'col';
     th.textContent = name;
+    if (name === '일') th.classList.add('is-sun'); // 일요일은 빨강, 토요일은 파랑 (ADR-079)
+    if (name === '토') th.classList.add('is-sat');
     head.append(th);
   }
   const body = document.createElement('tbody');
@@ -179,6 +181,8 @@ function buildMonth({ year, month }) {
     const row = document.createElement('tr');
     for (let i = 0; i < 7; i += 1, day += 1) {
       const cell = document.createElement('td');
+      if (i === 0) cell.classList.add('is-sun'); // 열 번호가 요일입니다. 0번째 일요일, 6번째 토요일 (ADR-079)
+      if (i === 6) cell.classList.add('is-sat');
       if (day >= 1 && day <= lastDay) {
         cell.append(document.createTextNode(String(day)));
         if (new Date(year, month - 1, day) < TODAY_START) cell.classList.add('is-past');
@@ -213,9 +217,19 @@ calendar.replaceChildren(...CALENDAR_MONTHS.map(buildMonth));
 function updateCalendarDots() {
   const range = calendar.scrollWidth - calendar.clientWidth;
   const current = range > 0 ? Math.round((calendar.scrollLeft / range) * (CALENDAR_MONTHS.length - 1)) : 0;
-  calendarDots.forEach((dot, i) => dot.classList.toggle('is-current', i === current));
+  calendarDots.forEach((dot, i) => {
+    dot.classList.toggle('is-current', i === current);
+    if (i === current) dot.setAttribute('aria-current', 'true');
+    else dot.removeAttribute('aria-current');
+  });
 }
 calendar.addEventListener('scroll', updateCalendarDots, { passive: true });
+// 점을 누르면 그 달로 넘어갑니다. 모션 감소 설정이면 바로 이동합니다. (ADR-077)
+calendarDots.forEach((dot, i) => {
+  dot.addEventListener('click', () => {
+    calendar.scrollTo({ left: calendar.children[i].offsetLeft, behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
+  });
+});
 updateCalendarDots();
 
 // 센터 안내: 주소는 화면의 주소 텍스트 한 곳에서만 읽습니다. 복사할 값과 지도 링크가 모두 여기서 나옵니다. (ADR-060)

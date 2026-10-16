@@ -57,11 +57,15 @@ test('마지막 카드를 뺀 모든 카드에는 "다음" 버튼이 있고, 마
   }
 });
 
-test('예약 안내 카드에는 버튼, 링크, 입력창이 없다 (ADR-011, ADR-061)', () => {
+test('예약 안내 카드에는 링크와 입력창이 없고, 버튼은 달력 월 이동 점 둘뿐이다 (ADR-011, ADR-061, ADR-077)', () => {
   const booking = article('card-booking');
-  for (const tag of ['<button', '<a ', '<input', '<textarea', '<select']) {
+  for (const tag of ['<a ', '<input', '<textarea', '<select']) {
     assert.ok(!booking.includes(tag), `예약 안내 카드에 ${tag}가 있습니다.`);
   }
+  const buttons = booking.match(/<button[^>]*>/g) || [];
+  assert.equal(buttons.length, 2);
+  assert.ok(buttons.every((b) => b.includes('class="calendar-dot') && b.includes('aria-label="')), '버튼은 이름이 있는 월 이동 점이어야 합니다.');
+  assert.ok(!booking.includes('data-next') && !booking.includes('data-back'));
 });
 
 test('맺음말은 암호문을 다시 만들기 전까지 서명으로 대신 보인다 (ADR-076)', () => {
@@ -116,10 +120,12 @@ test('센터 카드: 맨 위 로고, 소개 문구 없음, 초록 지도 버튼�
   assert.match(css, /\.button\.button-naver \{[^}]*background: var\(--naver\)/);
 });
 
-test('예약 카드의 달력: 10월·11월, 보기 전용 영역, 버튼·링크·입력창 없음 (ADR-069)', () => {
+test('예약 카드의 달력: 10월·11월, 보기 전용 영역, 월 이동 점 버튼 (ADR-069, ADR-077)', () => {
   const booking = article('card-booking');
   assert.match(booking, /<div id="calendar" class="calendar" role="region" aria-label="10월과 11월 달력" tabindex="0"><\/div>/);
-  assert.match(booking, /<div class="calendar-dots" aria-hidden="true"><span class="calendar-dot is-current"><\/span><span class="calendar-dot"><\/span><\/div>/, '점 표시는 장식(aria-hidden)이고 처음에는 10월 점이 켜져 있어야 합니다.');
+  assert.match(booking, /<div class="calendar-dots" role="group" aria-label="달력 월 이동"><button type="button" class="calendar-dot is-current" aria-label="10월 달력 보기" aria-current="true"><\/button><button type="button" class="calendar-dot" aria-label="11월 달력 보기"><\/button><\/div>/, '월 이동 점은 이름이 있는 버튼이고 처음에는 10월 점이 켜져 있어야 합니다. (ADR-077)');
+  assert.match(screens, /calendar\.scrollTo\(\{ left: calendar\.children\[i\]\.offsetLeft/);
+  assert.match(css, /\.calendar-dot \{[^}]*width: 44px;[^}]*height: 44px;/, '점의 눌러지는 영역은 44px이어야 합니다.');
   assert.match(screens, /const CALENDAR_MONTHS = \[\{ year: 2026, month: 10 \}, \{ year: 2026, month: 11 \}\];/);
   assert.match(screens, /new Date\(year, month - 1, 1\)\.getDay\(\)/);
   assert.match(css, /\.calendar \{[^}]*scroll-snap-type: x mandatory/);
@@ -134,6 +140,12 @@ test('달력: 11월 18일 하트(장식)와 읽어 줄 글, 지난 날짜 표시
   assert.match(screens, /new Date\(year, month - 1, day\) < TODAY_START/);
   assert.match(css, /\.calendar-month td\.is-past \{[^}]*color: var\(--past-day\)/);
   assert.match(css, /--past-day: #A39494;/);
+  assert.match(css, /--sat: #1565C0;/);
+  assert.match(css, /--sun: #C62828;/);
+  assert.match(screens, /if \(i === 0\) cell\.classList\.add\('is-sun'\)/);
+  assert.match(screens, /if \(i === 6\) cell\.classList\.add\('is-sat'\)/);
+  assert.match(css, /td\.is-sat\.is-past \{[^}]*var\(--sat-past\)/);
+  assert.match(css, /td\.is-sun\.is-past \{[^}]*var\(--sun-past\)/);
 });
 
 test('편지지에 세로 여백선이 없다 (ADR-073)', () => {
@@ -237,6 +249,36 @@ test('JS가 찾는 id가 모두 HTML에 있다 (id가 어긋나면 모듈이 죽
   for (const file of await readdir(join(ROOT, 'src/js'))) {
     for (const [, id] of (await read(`src/js/${file}`)).matchAll(/getElementById\('([^']+)'\)/g)) {
       assert.ok(ids.has(id), `src/js/${file}: HTML에 없는 id ${id}`);
+    }
+  }
+});
+
+test('CSS·JS 주소의 버전 쿼리(?v=)가 모든 위치에서 같다 (ADR-078)', async () => {
+  const targets = [
+    [html, /href="css\/style\.css\?v=([^"]+)"/],
+    [html, /src="js\/app\.js\?v=([^"]+)"/],
+    [await read('src/js/app.js'), /from '\.\/normalize\.js\?v=([^']+)'/],
+    [await read('src/js/app.js'), /from '\.\/crypto\.js\?v=([^']+)'/],
+    [await read('src/js/app.js'), /from '\.\/sound\.js\?v=([^']+)'/],
+    [await read('src/js/app.js'), /from '\.\/screens\.js\?v=([^']+)'/],
+    [screens, /from '\.\/confetti\.js\?v=([^']+)'/],
+    [screens, /from '\.\/crypto\.js\?v=([^']+)'/],
+  ];
+  const versions = targets.map(([text, pattern]) => {
+    const match = text.match(pattern);
+    assert.ok(match, `버전 쿼리가 없는 주소: ${pattern}`);
+    return match[1];
+  });
+  assert.equal(new Set(versions).size, 1, `?v= 값이 서로 다릅니다: ${versions}`);
+  assert.match(versions[0], /^\d+\.\d+\.\d+$/);
+  const all = [...html.matchAll(/\.(?:css|js)\?v=/g)].length + [...(await read('src/js/app.js')).matchAll(/\.js\?v=/g)].length + [...screens.matchAll(/\.js\?v=/g)].length;
+  assert.equal(all, targets.length, '버전 쿼리를 붙이지 않은 모듈 주소가 있거나 위 목록에 없는 주소가 있습니다.');
+});
+
+test('src/js의 모든 상대 import에 버전 쿼리가 있다: 같은 모듈이 두 번 로드되지 않게 (ADR-078)', async () => {
+  for (const file of await readdir(join(ROOT, 'src/js'))) {
+    for (const [, spec] of (await read(`src/js/${file}`)).matchAll(/from '(\.\/[^']+)'/g)) {
+      assert.match(spec, /\.js\?v=\d+\.\d+\.\d+$/, `src/js/${file}: 버전 쿼리가 없는 import ${spec}`);
     }
   }
 });
