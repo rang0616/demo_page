@@ -23,7 +23,7 @@
   --seal-dark: #9A3C50;
   --on-seal: #FFFFFF;
   --shadow-envelope: drop-shadow(0 6px 10px rgba(184, 140, 140, 0.28));
-  --letter-line: 2.5rem;   /* 편지지 줄 간격 (ADR-070) */
+  --letter-line: 2.25rem;  /* 편지지 줄 간격 (ADR-070, ADR-096) */
   --sat: #1565C0;        /* 토요일 파랑, 흰 바탕 대비 5.7:1 (ADR-079) */
   --sun: #C62828;        /* 일요일 빨강, 흰 바탕 대비 5.6:1 */
   --sat-past: #7E9CC8;   /* 지난 토요일, 일부러 옅게 */
@@ -45,6 +45,7 @@
   --gold-a: #F3D9A6;
   --gold-b: #E0B974;
   --muted-on-metal: #6B5C5C; /* 메탈 바탕(--metal-3 #F9DDD6) 위 흐린 글자 대비 4.9:1 */
+  --letter-accent: #D92D5A;  /* 편지 본문의 강조 문구. 흰 편지지 위 글자 대비 4.69:1 (ADR-098) */
   --voucher-accent: #B03A52;  /* "20회" 강조색. 가장 어두운 메탈 바탕 위 글자 대비 4.57:1 (ADR-085) */
   --center-metal-1: #FFFFFF;  /* 센터 카드(하늘색 은빛 메탈, ADR-090). 가장 어두운 바탕(-3)에서 본문 글자 7.52:1 */
   --center-metal-2: #EDF4FB;
@@ -68,7 +69,8 @@
 
   --font-body: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont,
     'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', sans-serif;
-  --font-letter: 'Nanum Pen Script', var(--font-body);
+  --font-letter: 'Gamja Flower', var(--font-body);        /* 편지 (ADR-093) */
+  --font-answer: 'Nanum Pen Script', var(--font-body);   /* 신원 확인 답란 (ADR-089, ADR-093) */
 
   --radius-card: 24px;
   --radius-pill: 999px;
@@ -139,7 +141,7 @@ body {
   width: 100%;
   padding: 6px 8px;
   font: inherit;
-  font-family: var(--font-letter);
+  font-family: var(--font-answer);
   font-size: 2.2rem;
   letter-spacing: 0.06em;
   text-align: center;
@@ -613,7 +615,7 @@ a.button {
 }
 
 .letter-salutation {
-  font-size: 1.75rem;
+  font-size: 1.875rem;
   font-weight: 400;
   line-height: var(--letter-line);
 }
@@ -872,6 +874,59 @@ a.button {
   outline-offset: 2px;
 }
 
+/* 편지 접기 버튼 (ADR-097): 이전 버튼과 같은 줄의 오른쪽 끝, 열린 편지에서만 보입니다. 모양과 효과는 이전 버튼과 같습니다. */
+.fold-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 44px;
+  padding: 0 16px 0 12px;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--card);
+  border: 2px solid var(--accent-border);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+@media (hover: hover) {
+  .fold-button:hover {
+    background: var(--accent-hover);
+  }
+}
+
+.fold-button:active {
+  background: var(--accent-hover);
+  transform: scale(0.95);
+}
+
+.fold-button svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.fold-button:focus-visible {
+  outline: 3px solid var(--text);
+  outline-offset: 2px;
+}
+
+/* 접으면 내용 프레임(제목과 봉투의 부모)이 부드럽게 나타납니다. 제목의 깜빡임, 봉투의 흔들림과 같은 요소·속성을 쓰지 않아 겹치지 않습니다. */
+#card-letter[data-refold] .letter {
+  animation: letter-reveal 0.35s ease-out backwards;
+}
+
 /* 이전 카드 버튼이 있는 카드는 위쪽 여백을 더 두어 글과 겹치지 않게 합니다. */
 .card.letter,
 .card.center,
@@ -881,16 +936,28 @@ a.button {
 
 .letter-paragraphs p,
 .letter-closing {
-  font-size: 1.5rem;
   line-height: var(--letter-line);
   white-space: pre-line; /* 문단 안의 줄바꿈을 그대로 보여 줍니다. */
 }
 
+/* 본문은 호칭(1.875rem)과 맺음말(1.5rem)보다 작게 둡니다. (ADR-094)
+   첫 줄 들여쓰기는 0.6글자이고, 문단 사이는 한 줄(=줄 간격)을 비워 편지지 줄과 어긋나지 않게 합니다. (ADR-096) */
 .letter-paragraphs p {
-  text-indent: 1em;
+  font-size: 1.375rem;
+  text-indent: 0.6em;
+}
+
+/* 비공개 원문에서 [[ ]]로 표시한 문구. 색만 바꿔 줄 격자를 깨지 않습니다. (ADR-098) */
+.letter-accent {
+  color: var(--letter-accent);
+}
+
+.letter-paragraphs p + p {
+  margin-top: var(--letter-line);
 }
 
 .letter-closing {
+  font-size: 1.5rem;
   text-align: right;
 }
 

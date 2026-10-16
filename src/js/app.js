@@ -1,13 +1,13 @@
 // 시작점: 안내 화면부터 잠금 해제, 선물 상자, 카드까지의 흐름을 연결합니다. (ADR-040, ADR-042, ADR-043, ADR-051, ADR-057)
 // 상태는 단일 변수 state에 둡니다: 'intro' | 'locked' | 'decrypting' | 'error' | 'gift' | 'opening' | 'cards'
 
-import { normalizeAnswer } from './normalize.js?v=1.11.0';
-import { UnlockError, decryptEnvelope } from './crypto.js?v=1.11.0';
-import { enableTapSound, playFanfare, playPop } from './sound.js?v=1.11.0';
+import { normalizeAnswer } from './normalize.js?v=1.12.0';
+import { UnlockError, decryptEnvelope } from './crypto.js?v=1.12.0';
+import { enableTapSound, playFanfare, playPop } from './sound.js?v=1.12.0';
 import {
   clearAnswer, focusInput, getAnswer, onGiftOpen, onStart, onSubmit, playOpening, renderLetter, renderVoucher, setBusy,
   setStatus, showError, showScreen, startCards,
-} from './screens.js?v=1.11.0';
+} from './screens.js?v=1.12.0';
 
 // 화면 문구 (design/01, ADR-033, ADR-043). 말투는 반말입니다. (ADR-029)
 const MESSAGE = {
@@ -72,9 +72,9 @@ async function handleSubmit() {
     return;
   }
 
-  // 날짜로 해석할 수 없으면 틀린 답으로 봅니다. 파일은 받지 않습니다.
-  const mmdd = normalizeAnswer(raw);
-  if (mmdd === null) {
+  // 정답과 글자가 완전히 같아야 키가 맞습니다(ADR-095). 비어 있는 값은 위에서 걸러 냅니다.
+  const answer = normalizeAnswer(raw);
+  if (answer === null) {
     setStatus(MESSAGE.wrong);
     focusInput();
     return;
@@ -88,7 +88,7 @@ async function handleSubmit() {
     // 보안 컨텍스트 검사는 fetch 전에 합니다. (ADR-042)
     if (!isSecureContextAvailable()) throw new UnlockError('insecure');
     if (envelope === null) envelope = await loadEnvelope();
-    unlockedPayload = await decryptEnvelope(envelope, mmdd);
+    unlockedPayload = await decryptEnvelope(envelope, answer);
   } catch (error) {
     const kind = error instanceof UnlockError ? error.kind : 'data';
     if (kind === 'wrong' || kind === 'network') {

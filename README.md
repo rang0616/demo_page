@@ -26,10 +26,10 @@ demo_page/
 │   ├── css/style.css      # 스타일
 │   ├── js/                # 스크립트 (ES 모듈)
 │   │   ├── app.js         #   시작점, 잠금 해제 흐름
-│   │   ├── normalize.js   #   정답 정규화 (도구와 공유)
-│   │   ├── accent.js      #   바우처 값에서 "20회"를 나누는 순수 함수
+│   │   ├── normalize.js   #   정답 처리 (NFC·trim, 도구와 공유)
+│   │   ├── accent.js      #   강조할 글자를 나누는 순수 함수(바우처 "20회", 편지 [[ ]])
 │   │   ├── crypto.js      #   키 파생, 복호화, 오류 구분
-│   │   ├── screens.js     #   화면과 카드 전환, 상태 문구, 포커스, 바우처·편지 표시, 이전 카드, 편지 봉투 열기, 예약 달력, 센터 주소 복사
+│   │   ├── screens.js     #   화면과 카드 전환, 상태 문구, 포커스, 바우처·편지 표시, 이전 카드, 편지 봉투 열기와 접기, 예약 달력, 센터 주소 복사
 │   │   ├── sound.js       #   효과음 합성: 뾱, 뿅, 짜잔 (WebAudio)
 │   │   └── confetti.js    #   폭죽 (캔버스)
 │   ├── data/              # 암호화된 본문 (letter.enc.json, 도구가 생성)
@@ -38,7 +38,7 @@ demo_page/
 │   ├── encrypt.mjs        #   암호문 생성과 셀프 테스트
 │   └── voucher.json       #   바우처 값
 ├── tests/                 # 단위 테스트 (배포 안 함)
-│   ├── normalize.test.mjs #   정답 정규화
+│   ├── normalize.test.mjs #   정답 처리
 │   ├── crypto.test.mjs    #   암호 왕복, 오류 구분, 파싱
 │   └── page.test.mjs      #   페이지 구조, 문구, 메타, 접근성 규칙 (파일 검사)
 ├── .github/workflows/     # 배포 워크플로 (pages.yml)
