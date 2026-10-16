@@ -13,6 +13,7 @@ const read = (path) => readFile(join(ROOT, path), 'utf8');
 
 const html = await read('src/index.html');
 const screens = await read('src/js/screens.js');
+const css = await read('src/css/style.css');
 const content = await read('design/02-content.md');
 const flow = await read('design/01-experience-flow.md');
 
@@ -86,6 +87,38 @@ test('이전 카드 버튼이 카드 화면에 하나 있고 이름이 있다. �
   assert.ok(html.indexOf('id="back-button"') > html.indexOf('id="screen-cards"'), '이전 카드 버튼은 카드 화면 안에 있어야 합니다.');
   assert.match(screens, /backButton\.hidden = cardIndex === 0/, '바우처(첫 카드)에서 이전 카드 버튼을 숨기는 코드가 없습니다.');
   assert.match(screens, /cardIndex > 0\) showCard\(cardIndex - 1\)/, '이전 카드로는 첫 카드보다 앞으로 가지 않아야 합니다.');
+});
+
+test('센터 카드: 맨 위 로고, 소개 문구 없음, 초록 지도 버튼과 장식 N 아이콘 (ADR-068)', () => {
+  const center = article('card-center');
+  assert.match(center, /<article[^>]*>\s*(?:<!--[\s\S]*?-->\s*)?<img class="logo" src="img\/logo\.jpg"[^>]*alt="리스파이어랩 로고">/, '로고가 카드 맨 위에 있어야 합니다.');
+  assert.ok(!center.includes('center-benefits') && !center.includes('<li'), '소개 문구 3개는 삭제되었습니다.');
+  assert.ok(!html.includes('애쓰지 않고 누워서') && !html.includes('프라이빗한 힐링 리커버리'), '삭제한 소개 문구가 남아 있습니다.');
+  const map = center.match(/<a id="map-link"([^>]*)>([\s\S]*?)<\/a>/);
+  assert.ok(map, '지도 링크가 없습니다.');
+  assert.ok(map[1].includes('button-naver') && map[1].includes('rel="noopener noreferrer"') && map[1].includes('target="_blank"'));
+  assert.match(map[2], /^<svg class="naver-mark"[^>]*aria-hidden="true"/, 'N 아이콘은 글자 앞의 장식(aria-hidden)이어야 합니다.');
+  assert.equal(textOf(map[2]), '네이버 지도로 보기');
+  assert.match(css, /--naver: #03C75A;/);
+  assert.match(css, /\.button\.button-naver \{[^}]*background: var\(--naver\)/);
+});
+
+test('예약 카드의 달력: 10월·11월, 보기 전용 영역, 버튼·링크·입력창 없음 (ADR-069)', () => {
+  const booking = article('card-booking');
+  assert.match(booking, /<div id="calendar" class="calendar" role="region" aria-label="10월과 11월 달력" tabindex="0"><\/div>/);
+  assert.match(booking, /<div class="calendar-dots" aria-hidden="true"><span class="calendar-dot is-current"><\/span><span class="calendar-dot"><\/span><\/div>/, '점 표시는 장식(aria-hidden)이고 처음에는 10월 점이 켜져 있어야 합니다.');
+  assert.match(screens, /const CALENDAR_MONTHS = \[\{ year: 2026, month: 10 \}, \{ year: 2026, month: 11 \}\];/);
+  assert.match(screens, /new Date\(year, month - 1, 1\)\.getDay\(\)/);
+  assert.match(css, /\.calendar \{[^}]*scroll-snap-type: x mandatory/);
+});
+
+test('편지지와 메탈 바우처의 핵심 스타일이 있다 (ADR-070, ADR-071)', () => {
+  assert.match(css, /--letter-line: 2\.5rem;/);
+  assert.match(css, /\.letter-salutation \{[^}]*line-height: var\(--letter-line\)/, '호칭의 line-height는 --letter-line이어야 합니다.');
+  assert.match(css, /\.letter-paragraphs p,\s*\.letter-closing \{[^}]*line-height: var\(--letter-line\)/, '문단과 맺음말의 line-height는 --letter-line이어야 합니다.');
+  assert.match(css, /\.letter-body \{[\s\S]*?var\(--paper-line\)[\s\S]*?var\(--paper\)/);
+  assert.match(css, /\.voucher \{[\s\S]*?var\(--metal-1\)[\s\S]*?var\(--metal-edge-a\)/);
+  assert.match(css, /\.voucher::before \{[\s\S]*?animation: holo-shimmer 7s infinite linear/);
 });
 
 test('예약 안내 문구가 02-content.md의 기준 문구와 같다', () => {
