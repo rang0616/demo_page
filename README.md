@@ -5,6 +5,7 @@
 - 배포 주소: https://rang0616.github.io/demo_page/
 - 설계 문서의 진입점: [design/README.md](design/README.md)
 - 작업 규칙: [CLAUDE.md](CLAUDE.md)
+- 상태: **완료**(2026-10-17, 기준선 `v1.13.0`). 윰댕에게 전달했고, GitHub Pages는 지금 공개로 둡니다(끄는 시점은 `design/07` Q26). 이후 요청이 있으면 `main`에서 새 `v1.x` 브랜치로 진행합니다.
 
 ## 저장소 구조
 
