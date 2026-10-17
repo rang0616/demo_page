@@ -2,9 +2,9 @@
 // (ADR-047, ADR-053, ADR-054, ADR-055, ADR-057, ADR-060, ADR-065, ADR-066).
 // 안내, 잠금, 오류, 선물 상자, 카드를 한 화면 단위로 바꿉니다. 이전 카드로는 바우처까지만 돌아갑니다. (ADR-065)
 
-import { burstConfetti } from './confetti.js?v=1.12.0';
-import { VOUCHER_KEYS } from './crypto.js?v=1.12.0';
-import { splitAccent, splitMarked } from './accent.js?v=1.12.0';
+import { burstConfetti } from './confetti.js?v=1.13.0';
+import { VOUCHER_KEYS } from './crypto.js?v=1.13.0';
+import { splitAccent, splitMarked } from './accent.js?v=1.13.0';
 
 const SCREEN_IDS = {
   intro: 'screen-intro',
@@ -15,7 +15,7 @@ const SCREEN_IDS = {
 };
 
 const OPEN_ANIMATION_MS = 900; // 상자 뚜껑 연출(CSS 0.8초) 뒤 약간의 여유. style.css의 transition과 짝입니다.
-const CARD_IDS = ['card-voucher', 'card-letter', 'card-center', 'card-booking']; // 카드 순서는 이 배열 하나로 정합니다. (ADR-054, ADR-060, ADR-061)
+const CARD_IDS = ['card-voucher', 'card-letter', 'card-booking']; // 카드 순서는 이 배열 하나로 정합니다. (ADR-054, ADR-060, ADR-061)
 const NAVER_MAP_SEARCH = 'https://map.naver.com/p/search/';
 // 센터 카드의 안내 문구 (design/02 연출 문구). 시스템 문구라 반말입니다. (ADR-029)
 const COPY_MESSAGE = { done: '주소를 복사했어!', failed: '복사가 안 됐어. 주소를 길게 눌러서 복사해 줘.' };
@@ -265,6 +265,35 @@ calendarDots.forEach((dot, i) => {
   });
 });
 updateCalendarDots();
+
+// 회원권 뒤집기 (ADR-099): 면 안의 [data-flip] 버튼만 뒤집습니다(카드의 다른 곳을 눌러도 뒤집히지 않음).
+// 새 면의 inert와 aria-hidden을 먼저 풀고 → 새 면의 버튼으로 포커스를 옮기고 → 옛 면에 inert를 겁니다(포커스가 body로 떨어지지 않게).
+// 뒤집는 중(FLIP_MS)에는 다시 눌러도 무시합니다. 모션 감소 설정에서는 CSS가 회전을 끄고 바로 바꿉니다.
+const FLIP_MS = 700;
+const flipBox = document.getElementById('flip');
+const faceFront = document.getElementById('face-front');
+const faceBack = document.getElementById('face-back');
+let flipping = false;
+
+function setFaceHidden(face, hidden) {
+  face.toggleAttribute('inert', hidden);
+  if (hidden) face.setAttribute('aria-hidden', 'true');
+  else face.removeAttribute('aria-hidden');
+}
+
+function flipCard() {
+  if (flipping) return;
+  flipping = true;
+  const toBack = !flipBox.classList.contains('is-flipped');
+  const [shown, hiddenFace] = toBack ? [faceBack, faceFront] : [faceFront, faceBack];
+  setFaceHidden(shown, false);
+  flipBox.classList.toggle('is-flipped', toBack);
+  shown.querySelector('[data-flip]').focus({ preventScroll: true });
+  setFaceHidden(hiddenFace, true);
+  setTimeout(() => { flipping = false; }, FLIP_MS);
+}
+
+flipBox.querySelectorAll('[data-flip]').forEach((button) => button.addEventListener('click', flipCard));
 
 // 센터 안내: 주소는 화면의 주소 텍스트 한 곳에서만 읽습니다. 복사할 값과 지도 링크가 모두 여기서 나옵니다. (ADR-060)
 const addressElement = document.getElementById('center-address');

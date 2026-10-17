@@ -146,10 +146,10 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 
 - 안내, 잠금, 상자, 카드들은 한 화면 단위로 바꿉니다. 카드에서는 바우처 다음 카드부터 이전 카드로 돌아갈 수 있고, 그 앞의 화면으로는 돌아가지 않습니다. (ADR-047, ADR-057, ADR-065)
 - 상태 흐름: `intro → locked → decrypting → locked(틀림·네트워크 오류, 입력 유지) | error(데이터·버전)`, `decrypting → gift → opening → cards`. (ADR-053)
-- 잠금 해제 후에는 카드를 한 장씩 넘깁니다: 효과음과 상자 연출 → 바우처 → 편지 → 센터 안내 → 예약 문구. 카드는 "다음" 버튼으로만 넘어갑니다. (ADR-047, ADR-055)
+- 잠금 해제 후에는 카드를 한 장씩 넘깁니다: 효과음과 상자 연출 → 바우처(뒷면은 센터 안내) → 편지 → 예약 문구. 카드는 "다음" 버튼으로만 넘어갑니다. (ADR-047, ADR-055)
 - 화면 전환 후 새 섹션 제목에 `tabindex="-1"`로 포커스를 옮깁니다. 대기·틀림 문구는 `role="status"`, 오류 화면은 `role="alert"`로 알립니다. (ADR-051)
 - 지원 기기(ADR-083): 최종 수신자 윰댕의 갤럭시(S24로 알고 있음, 약 360×780, 안드로이드 크롬·삼성 인터넷·카카오톡 인앱)가 기준이고, 휘님의 아이폰 14 Pro(393×852, iOS 16 이상 Safari·카카오톡 인앱)에서도 같게 나옵니다. 그 밖에는 최근 2년 안의 버전이며 최소 폭은 320px입니다. 페이지는 밝은 색 구성만 지원한다고 알립니다(`<meta name="color-scheme" content="only light">`, CSS `color-scheme: only light`. 크롬의 강제 다크 모드 변환을 막고, 삼성 인터넷은 보장하지 못하는 한계). `-webkit-text-size-adjust`와 `text-size-adjust`는 100%입니다(브라우저의 글자 자동 확대 방지. 사용자의 글자 크기 설정은 막지 않음). iOS에서는 무음 모드에서 소리가 나지 않을 수 있고(한계), 입력창 글자는 16px 이상을 유지합니다.
-- 모듈 역할: `normalize.js`(순수 함수), `accent.js`(강조할 글자를 나누는 순수 함수: 바우처 `splitAccent` ADR-085, 편지 `splitMarked`·`markersBalanced` ADR-098), `crypto.js`(키 파생, 복호화, 오류 구분), `screens.js`(화면과 카드 표시, 이동, 포커스, 바우처 채우기("20회" 강조, `VOUCHER_ACCENT`, ADR-085)와 편지 채우기, 편지 봉투 열기, 이전 카드, 예약 달력, 센터 주소 복사와 지도 링크), `sound.js`(효과음 합성), `confetti.js`(폭죽), `app.js`(흐름 연결).
+- 모듈 역할: `normalize.js`(순수 함수), `accent.js`(강조할 글자를 나누는 순수 함수: 바우처 `splitAccent` ADR-085, 편지 `splitMarked`·`markersBalanced` ADR-098), `crypto.js`(키 파생, 복호화, 오류 구분), `screens.js`(화면과 카드 표시, 이동, 포커스, 회원권 뒤집기(ADR-099), 바우처 채우기("20회" 강조, `VOUCHER_ACCENT`, ADR-085)와 편지 채우기, 편지 봉투 열기, 이전 카드, 예약 달력, 센터 주소 복사와 지도 링크), `sound.js`(효과음 합성), `confetti.js`(폭죽), `app.js`(흐름 연결).
 
 ## 보조 규칙 (ADR-042, ADR-043)
 
@@ -176,7 +176,7 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 - 버튼 소리는 문서 전체의 클릭을 한 곳에서 받아 처리합니다(이벤트 위임). 비활성 버튼과 `data-own-sound`가 붙은 버튼(상자)은 제외합니다. 폼에서 Enter로 제출해도 브라우저가 제출 버튼의 클릭을 일으키므로 소리가 납니다.
 - 폭죽은 `confetti.js`가 전체 화면 캔버스(`aria-hidden`, 클릭 통과)에 그립니다. 상자 위치에서 위쪽으로 터지고, 약 1.8초 뒤 캔버스를 비우고 숨깁니다. 모션 감소 설정이면 그리지 않습니다.
 - 바우처와 편지는 복호화한 값을 `textContent`로 채웁니다. `innerHTML`은 쓰지 않습니다. 편지는 첫 항목을 호칭, 마지막 항목을 맺음말, 그 사이를 문단으로 나눠 넣고, 문단 안의 줄바꿈은 CSS로 보존합니다. (ADR-060)
-- 카드는 `screens.js`가 관리합니다. 카드 목록의 순서는 코드의 배열 `CARD_IDS` 하나로 정합니다. 현재 순서는 바우처 → 편지 → 센터 안내 → 예약 안내입니다. (ADR-054, ADR-060, ADR-061)
+- 카드는 `screens.js`가 관리합니다. 카드 목록의 순서는 코드의 배열 `CARD_IDS` 하나로 정합니다. 현재 순서는 바우처 → 편지 → 예약 안내입니다(센터 안내는 바우처의 뒷면, ADR-099). (ADR-054, ADR-060, ADR-061)
 - 모션 감소: `prefers-reduced-motion: reduce`이면 연출 대기 시간 없이 바로 `cards`로 갑니다.
 
 ## 카드 등장 연출과 로고 (ADR-056)
@@ -207,6 +207,8 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 
 ## 편지와 센터 안내 구현 (ADR-060)
 
+- 회원권 뒤집기(ADR-099): `article#card-voucher` 안에 `div.flip > div.flip-inner`가 있고, 그 안에 `div.card.voucher.face.face-front`(앞면, 맨 아래에 `button.flip-hint[data-flip]` "뒤집어서 센터 위치 보기")와 `div.card.center.face.face-back`(뒷면, 처음에 `inert`와 `aria-hidden="true"`, 센터 안내 내용을 묶은 `div.center-body`와 맨 아래의 `button.flip-hint[data-flip]` "회원권 보기")가 같은 칸에 겹칩니다. `screens.js`가 `[data-flip]` 버튼의 클릭만 받아 `div.flip`의 `is-flipped`를 바꾸고, 보이지 않는 면에 `inert`·`aria-hidden`을 붙이고 보이는 면에서 풀며, 포커스를 새로 보이는 면의 뒤집기 버튼으로 옮깁니다. 뒤집는 순서는 "새 면의 `inert`·`aria-hidden` 해제 → 새 면의 뒤집기 버튼에 `focus({ preventScroll: true })` → 옛 면에 `inert`·`aria-hidden`"입니다(옛 면에 먼저 `inert`를 걸면 포커스가 body로 떨어짐). 뒤집는 중(0.7초, `FLIP_MS`)에는 다시 눌러도 무시하며, 모션 감소 설정에서도 같은 시간 동안 무시해 두 동작이 꼬이지 않게 합니다. 카드의 다른 곳을 눌러도 뒤집히지 않으므로 카드 자체에는 클릭 처리를 두지 않습니다. 모션 감소 설정에서는 CSS 전환이 꺼져 바로 바뀝니다.
+
 - 편지 카드 묶음(`article#card-letter`)은 봉투(`#envelope`)와 편지 본문(`#letter-body`)을 함께 갖고, 이 `article`의 `data-state`가 `sealed → opening → open`으로 바뀌고, 열린 뒤 접기 버튼(`button#fold-button`, 마크업은 이전 버튼 다음, `hidden`으로 시작, `open`이 되면 보임, ADR-097)을 누르면 `open → sealed`로 돌아갑니다(봉투·제목을 다시 보이고 제목의 클래스를 `letter-heading`으로 되돌리며, 본문·"다음" 구역·접기 버튼을 숨기고, 포커스를 봉인 버튼으로 옮김). 처음에는 봉투만 보이고 본문(`hidden`)과 "다음" 버튼 구역(`.card-actions`, `hidden`)은 숨겨져 있습니다. 봉인 버튼(`#seal-button`)을 누르면 `opening`(덮개와 종이 움직임, CSS 전환)이 되고, 약 0.8초(`ENVELOPE_OPEN_MS`, ADR-075) 뒤 봉투를 숨기고 본문과 "다음" 버튼 구역을 보여 주며 `open`이 됩니다. 이때 포커스는 본문(`tabindex="-1"`)으로 옮깁니다. 모션 감소 설정이면 `opening`을 거치지 않고 바로 `open`입니다. 카드의 이름은 제목 `#letter-heading`(`h1`, 처음에는 "편지가 도착했습니다!"로 보이고 편지가 열리면 `sr-only`로 바뀜, ADR-074)이 맡습니다. (ADR-066) 봉투 상태(`sealed`)에서는 제목이 깜빡이고(`notice-blink`, 1.6초) 봉투가 좌우로 흔들리며(`envelope-wiggle`, 2.4초 주기) `opening`이 되면 둘 다 멈추고(제목은 전환 없이 바로 사라져 다시 진해지는 번쩍임이 없고, 봉투는 바로 반듯해짐), 모션 감소 설정에서는 없습니다. 둘 다 카드 등장 연출(0.7초)이 끝난 뒤 시작합니다. JS는 관여하지 않는 CSS 애니메이션입니다. (ADR-087)
 - 예약 안내 카드의 달력(`#calendar`, ADR-069, ADR-072)은 이렇게 만듭니다.
   - JS가 `CALENDAR_MONTHS`(2026년 10월, 11월)로 만들어 채웁니다. 달마다 `div.calendar-month` 안의 `table`(`caption` "2026년 10월", 요일 `th`, 날짜 `td`)이고, 1일의 요일은 `new Date(연, 월-1, 1).getDay()`, 말일은 `new Date(연, 월, 0).getDate()`로 계산합니다. 슬라이드는 CSS 스크롤 스냅(가로)이며, 달력 영역은 `role="region"`, `tabindex="0"`, `aria-label="10월과 11월 달력"`입니다. 스크롤 비율로 아래 점의 현재 표시(`is-current`, `aria-current`)를 갱신합니다. 내용 프레임 안의 버튼은 아래의 월 이동 점 두 개(`button.calendar-dot`, 누르면 `calendar.scrollTo`로 그 달 슬라이드로 이동, ADR-077)뿐이고(이전 버튼은 카드 묶음에 있음, ADR-081) 링크와 입력창은 없습니다.
@@ -214,7 +216,7 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 - 센터 카드(`div.card.center`(CSS가 메탈 모양을 입힘))의 버튼은 `.center-actions` 안에 한 줄로 지도 링크(`#map-link`, 보이는 글 "지도로 보기", `aria-label="네이버 지도로 보기"`)가 왼쪽, 주소 복사(`#copy-address`)가 오른쪽에 있고 복사 결과 문구 `#copy-status`는 그 아래입니다. (ADR-090) 지도 링크는 앞에 인라인 SVG "N" 아이콘(`aria-hidden`)을 두고, 색은 `--naver`, `--on-naver` 변수로 정합니다. 소개 문구 목록(`.center-benefits`)은 삭제했습니다. (ADR-068)
 - 편지 본문 문단의 강조(ADR-098): 문단 안에서 `[[`와 `]]`로 감싼 문구를 `splitMarked`가 `{ text, accent }` 조각으로 나누고, 화면 코드가 텍스트 노드와 `span.letter-accent`(`textContent`만 사용)로 채워 표시 문자는 보이지 않게 합니다. 짝이 맞지 않는 문단(`markersBalanced`가 거짓)은 글자 그대로 보여 줍니다. 암호문 도구는 짝이 맞지 않는 문단이 있으면 몇 번째 문단인지(번호만)를 알리고 실패합니다. 호칭과 맺음말에는 적용하지 않습니다.
 - 편지의 맺음말은 암호문의 마지막 항목(`letter[letter.length - 1]`)을 그대로 보여 줍니다. 임시로 서명을 대신 보여 주던 `CLOSING_OVERRIDE`는 2026-10-17에 암호문을 다시 만든 뒤 지웠습니다. (ADR-076)
-- 카드 마크업(ADR-081): `article#card-…`(`class="card-stack"`, `data-card`, `tabindex="-1"`, `aria-labelledby`) 안에 이전 버튼(`button.back-button[data-back]`, 바우처 제외), (편지 카드만) 접기 버튼(`button#fold-button.fold-button`, ADR-097), 내용 프레임(`div.card`에 카드별 클래스 `voucher`/`letter`/`center`/`booking`), "다음" 버튼 구역(`div.card-actions`, 안에 `button[data-next]`, 마지막 카드 제외)을 차례로 둡니다. 등장 연출은 `article` 전체에 붙습니다. 편지 카드의 `data-state`는 `article`에 있고, 열리면(`open`) CSS가 프레임의 좌우·아래 여백을 없앱니다. 편지 카드의 프레임은 봉투 상태에서도 흰 바탕과 그림자가 없습니다(ADR-086).
+- 카드 마크업(ADR-081): `article#card-…`(`class="card-stack"`, `data-card`, `tabindex="-1"`, `aria-labelledby`) 안에 이전 버튼(`button.back-button[data-back]`, 바우처 제외), (편지 카드만) 접기 버튼(`button#fold-button.fold-button`, ADR-097), 내용 프레임(`div.card`에 카드별 클래스 `letter`/`booking`(바우처 카드 묶음의 내용은 `div.flip > div.flip-inner > 두 면(div.card.voucher, div.card.center)`, ADR-099)), "다음" 버튼 구역(`div.card-actions`, 안에 `button[data-next]`, 마지막 카드 제외)을 차례로 둡니다. 등장 연출은 `article` 전체에 붙습니다. 편지 카드의 `data-state`는 `article`에 있고, 열리면(`open`) CSS가 프레임의 좌우·아래 여백을 없앱니다. 편지 카드의 프레임은 봉투 상태에서도 흰 바탕과 그림자가 없습니다(ADR-086).
 - 이전 버튼은 카드마다 하나씩이며 보이고 숨기는 JS가 없습니다(바우처 카드에는 아예 없음). 누르면 한 장 앞 카드를 보여 줍니다. 편지 카드의 "다음" 버튼 구역(`.card-actions`)은 `hidden`으로 시작해 편지가 열리면 JS가 보여 주고, 접기 버튼을 누르면 다시 숨깁니다. 접기 버튼(`#fold-button`)도 `hidden`으로 시작해 `open`이 되면 보이고 접으면 숨깁니다. 접을 때 `article`에 `data-refold`를 붙여 `.letter`가 0.35초 페이드로 나타나게 하고(페이드가 끝나거나 `opening`이 되면 지움), 포커스는 봉인 버튼으로 옮깁니다. (ADR-065, ADR-081, ADR-097)
 - 센터 정보는 공개 HTML에 정적으로 둡니다. 주소는 `<address>` 텍스트 한 곳이며, 복사할 값과 지도 링크의 검색어는 이 텍스트에서 읽습니다. 지도 링크의 주소(`href`)는 JS가 이 텍스트로 만듭니다.
 - 주소 복사는 `navigator.clipboard.writeText`만 씁니다. 실패하면(API가 없거나 거부됨) 실패 문구를 보여 줍니다. 복사 결과 문구는 `role="status"` 영역에 같은 방식으로 다시 읽히게 갱신합니다.
@@ -227,7 +229,7 @@ CLAUDE.md, .claude/      # 작업 규칙과 설정
 
 ## 페이지 구조 테스트 (ADR-062)
 
-- `tests/page.test.mjs`가 `index.html`, `screens.js`, 설계 문서(02, 01)를 글자로 읽어 카드 순서와 속성, 편지 처음 상태(봉투, ADR-066), 이전 카드 버튼(ADR-065, 카드마다 하나씩 ADR-081), 카드 묶음 구조(ADR-081, 예약 카드의 버튼 검사는 내용 프레임 `div.card.booking` 기준), 미리보기 이미지(ADR-064), 센터 카드(로고, 지도 버튼, 소개 문구 없음, ADR-068), 예약 달력(ADR-069)과 월 이동 점 버튼(ADR-077), 요일 색(ADR-079), CSS·JS 주소의 `?v=` 일치(ADR-078), 문구 일치, 메타, 접근성 규칙, 외부 주소 허용 목록, 금지 API, 크기 예산, 암호문 구조를 검사합니다. 브라우저 동작은 `/preview-check`가 맡습니다.
+- `tests/page.test.mjs`가 `index.html`, `screens.js`, 설계 문서(02, 01)를 글자로 읽어 카드 순서와 속성, 편지 처음 상태(봉투, ADR-066), 이전 카드 버튼(ADR-065, 카드마다 하나씩 ADR-081), 카드 묶음 구조(ADR-081, 뒤집기 구조: 두 면, 처음 뒷면 `inert`·`aria-hidden`, `data-flip` 버튼 두 개, `article#card-center` 없음, ADR-099, 예약 카드의 버튼 검사는 내용 프레임 `div.card.booking` 기준), 미리보기 이미지(ADR-064), 센터 카드(로고, 지도 버튼, 소개 문구 없음, ADR-068), 예약 달력(ADR-069)과 월 이동 점 버튼(ADR-077), 요일 색(ADR-079), CSS·JS 주소의 `?v=` 일치(ADR-078), 문구 일치, 메타, 접근성 규칙, 외부 주소 허용 목록, 금지 API, 크기 예산, 암호문 구조를 검사합니다. 브라우저 동작은 `/preview-check`가 맡습니다.
 
 ## 배포 때의 캐시 대책 (ADR-078)
 
