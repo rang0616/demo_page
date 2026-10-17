@@ -874,6 +874,107 @@ a.button {
   outline-offset: 2px;
 }
 
+/* 회원권 뒤집기 (ADR-099): 앞면(회원권)과 뒷면(센터 안내)이 같은 칸에 겹쳐 있어 높이는 큰 쪽입니다. 면 안의 버튼으로만 뒤집습니다.
+   .flip-inner에는 overflow, opacity, filter를 두지 않습니다(3D 보존이 풀립니다). */
+.flip {
+  display: grid;
+  perspective: 1400px;
+}
+
+.flip-inner {
+  display: grid;
+  transform-style: preserve-3d;
+  transition: transform 0.7s cubic-bezier(0.4, 0.2, 0.2, 1);
+}
+
+/* 면마다 합성 층을 나눠 iOS Safari에서 반사광이 거울처럼 비치거나 모서리 밖으로 삐져나오지 않게 합니다. */
+.flip-inner > .face {
+  grid-area: 1 / 1;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  isolation: isolate;
+}
+
+.face-front {
+  transform: rotateY(0deg);
+}
+
+.face-back {
+  transform: rotateY(180deg);
+}
+
+.flip.is-flipped .flip-inner {
+  transform: rotateY(180deg);
+}
+
+/* 보이지 않는 면의 반사광은 멈춰 둡니다. */
+.flip:not(.is-flipped) .face-back::before,
+.flip.is-flipped .face-front::before {
+  animation-play-state: paused;
+}
+
+/* 뒷면의 센터 안내 내용은 면의 위쪽 끝과 아래쪽 뒤집기 버튼 사이에서 세로 가운데에 놓입니다. (ADR-099) */
+.center-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-block: auto;
+}
+
+/* 뒤집기 버튼: 면 바닥에 붙고, 앞뒤 면에서 같은 높이에 있습니다. 모양과 효과는 이전 버튼과 같습니다. */
+.face-back .flip-hint {
+  margin-top: 0; /* 뒷면은 .center-body의 자동 여백이 남는 공간을 나눠 가집니다. */
+}
+
+.flip-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  gap: 8px;
+  min-height: 44px;
+  max-width: 100%;
+  margin-top: auto;
+  padding: 0 18px 0 14px;
+  font: inherit;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--text);
+  background: var(--card);
+  border: 2px solid var(--accent-border);
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+}
+
+@media (hover: hover) {
+  .flip-hint:hover {
+    background: var(--accent-hover);
+  }
+}
+
+.flip-hint:active {
+  background: var(--accent-hover);
+  transform: scale(0.95);
+}
+
+.flip-hint svg {
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.flip-hint:focus-visible {
+  outline: 3px solid var(--text);
+  outline-offset: 2px;
+}
+
 /* 편지 접기 버튼 (ADR-097): 이전 버튼과 같은 줄의 오른쪽 끝, 열린 편지에서만 보입니다. 모양과 효과는 이전 버튼과 같습니다. */
 .fold-button {
   position: absolute;
@@ -929,7 +1030,6 @@ a.button {
 
 /* 이전 카드 버튼이 있는 카드는 위쪽 여백을 더 두어 글과 겹치지 않게 합니다. */
 .card.letter,
-.card.center,
 .card.booking {
   padding-top: 64px;
 }
@@ -961,7 +1061,7 @@ a.button {
   text-align: right;
 }
 
-/* 센터 안내 카드 (ADR-060) */
+/* 센터 안내 카드 = 회원권 뒷면 (ADR-060, ADR-099) */
 /* 하늘색 은빛 메탈 카드 (ADR-090). 바우처와 색, 세로 결, 9초 반사광이 다릅니다. */
 .center {
   position: relative;
